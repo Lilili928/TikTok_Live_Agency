@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+@theme {
+  --color-tiktok-pink: #ff2c55;
+  --color-tiktok-blue: #25F4EE;
+  --color-tiktok-purple: #7c3aed;
+  --color-tiktok-teal: #3ac2c1;
+}
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-700 antialiased;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  * {
+    @apply border-slate-200/50;
+  }
+}
+
+@layer components {
+  .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: transparent; border-radius: 2px; }
+  .scrollbar-thin:hover::-webkit-scrollbar-thumb { background: #e2e8f0; }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+
+  .glass-card {
+    @apply bg-white border border-slate-100 rounded-xl shadow-sm;
+  }
+
+  .hide-scrollbar-dynamic::-webkit-scrollbar { width: 6px; }
+  .hide-scrollbar-dynamic::-webkit-scrollbar-track { background: transparent; }
+  .hide-scrollbar-dynamic::-webkit-scrollbar-thumb { background: transparent; border-radius: 3px; transition: background-color 0.3s ease; }
+  .hide-scrollbar-dynamic.is-scrolling-active::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.4); }
+}

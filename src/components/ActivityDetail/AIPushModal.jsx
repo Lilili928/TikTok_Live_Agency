@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { X, Send, Sparkles, Copy, Check, Loader2, Settings } from 'lucide-react';
+import { callDeepSeek } from '../../utils/deepseek';
 
 function getDefaultTags(host) {
   const hourGap = Math.max(0, host.hourGoal - host.hourCurrent);
@@ -14,9 +15,6 @@ function getDefaultTags(host) {
   return [gapText, '准备了激励方案', '任何问题联系我们'];
 }
 
-const API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY;
-const API_URL = 'https://api.deepseek.com/v1/chat/completions';
-
 function buildSystemPrompt(host, userPoints) {
   const diamondGap = Math.max(0, host.diamondGoal - host.diamondCurrent);
   const hourGap = Math.max(0, host.hourGoal - host.hourCurrent);
@@ -28,32 +26,6 @@ function buildSystemPrompt(host, userPoints) {
   const gapDesc = gaps.length > 0 ? gaps.join('，') : '已达成目标';
 
   return `你是一个专业的运营人员，说话要精炼、专业，不要啰嗦。需要催主播"${host.name}"抓紧开播冲刺。关键信息：本赛段即将到期，${gapDesc}，激励主播尽快完成直播任务拿奖励。以主播名字开头，文案控制在2-3句话以内，最后加一个合适的emoji。注意：必须是一段完整连贯的自然段落，不要有任何换行、分段或项目符号。`;
-}
-
-async function callDeepSeek(systemPrompt, userMessage) {
-  if (!API_KEY) {
-    console.warn('VITE_DEEPSEEK_API_KEY not set — using mock fallback');
-    await new Promise(r => setTimeout(r, 1200 + Math.random() * 800));
-    const name = '主播';
-    return `${name}，活动倒计时中，距离目标只差最后一步了，专属激励已就位，今晚开播冲刺一下吧！💪`;
-  }
-
-  const response = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${API_KEY}` },
-    body: JSON.stringify({
-      model: 'deepseek-chat',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage || '请生成催播话术' },
-      ],
-      temperature: 0.8,
-      max_tokens: 600,
-    }),
-  });
-  if (!response.ok) throw new Error(`DeepSeek API error: ${response.status}`);
-  const data = await response.json();
-  return data.choices[0].message.content;
 }
 
 export default function AIPushModal({ host, onClose }) {

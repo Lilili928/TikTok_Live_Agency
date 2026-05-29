@@ -1,35 +1,11 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { X, Send, Sparkles, Loader2, Check, Copy, Settings, ChevronDown } from 'lucide-react';
-
-const API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY;
-const API_URL = 'https://api.deepseek.com/v1/chat/completions';
+import { callDeepSeek } from '../../utils/deepseek';
 
 function buildSystemPrompt(activeTargets) {
   const names = activeTargets.map(h => h.name).join('、');
   return `你是一个专业的运营人员，说话要精炼、专业，不要啰嗦。请以"亲爱的主播你好"开头，生成一条催播话术，控制在2-3句话以内，最后加一个合适的emoji。注意：必须是一段完整连贯的自然段落，不要出现具体主播名字。`;
-}
-
-async function callDeepSeek(prompt) {
-  if (!API_KEY) {
-    console.warn('VITE_DEEPSEEK_API_KEY not set — using mock fallback');
-    await new Promise(r => setTimeout(r, 1200));
-    return `亲爱的主播你好，活动倒计时中，专属激励已就位，抓紧时间开播冲刺吧，丰厚奖励等你来拿！💪`;
-  }
-  const response = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${API_KEY}` },
-    body: JSON.stringify({
-      model: 'deepseek-chat',
-      messages: [
-        { role: 'system', content: '你是一个专业的 TikTok 直播公会运营总监，说话精炼专业。' },
-        { role: 'user', content: prompt },
-      ],
-      temperature: 0.8, max_tokens: 500,
-    }),
-  });
-  const data = await response.json();
-  return data.choices[0].message.content;
 }
 
 const defaultTags = ['活动剩余天数提醒', '准备了激励方案', '任何问题联系我们'];
@@ -55,7 +31,7 @@ export default function BatchPushModal({ hosts, onClose }) {
 
   useState(() => {
     if (activeTargets.length > 0) {
-      callDeepSeek(buildSystemPrompt(activeTargets)).then(r => { setText(r); setLoading(false); });
+      callDeepSeek(buildSystemPrompt(activeTargets), '请生成批量催播话术').then(r => { setText(r); setLoading(false); });
     } else {
       setText('所选主播均已完成任务，无需催播。');
       setLoading(false);
@@ -64,7 +40,7 @@ export default function BatchPushModal({ hosts, onClose }) {
 
   const handleGenerate = useCallback(async () => {
     setLoading(true);
-    try { const r = await callDeepSeek(buildSystemPrompt(activeTargets)); setText(r); } catch (e) { console.error(e); }
+    try { const r = await callDeepSeek(buildSystemPrompt(activeTargets), '请生成批量催播话术'); setText(r); } catch (e) { console.error(e); }
     setLoading(false);
   }, [activeTargets]);
 
@@ -72,7 +48,10 @@ export default function BatchPushModal({ hosts, onClose }) {
     if (!text.trim()) return;
     setPolishing(true);
     try {
-      const r = await callDeepSeek(`润色以下催播话术，使其更专业精炼，控制在2-3句话以内，以"亲爱的主播你好"开头，不要出现具体主播名字：${text}`);
+      const r = await callDeepSeek(
+        `你是一个专业的 TikTok 直播公会运营总监，说话精炼专业。`,
+        `润色以下催播话术，使其更专业精炼，控制在2-3句话以内，以"亲爱的主播你好"开头，不要出现具体主播名字：${text}`
+      );
       setText(r);
     } catch (e) { console.error(e); }
     setPolishing(false);

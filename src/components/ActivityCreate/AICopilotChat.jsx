@@ -30,8 +30,8 @@ export default function AICopilotChat({ onPresetSelect }) {
   };
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between mb-2.5">
+    <div className="flex flex-col flex-1 min-h-0">
+      <div className="flex items-center justify-between mb-5 shrink-0">
         <div className="flex items-center gap-1.5">
           <Sparkles className="w-5 h-5 text-violet-500" />
           <span className="text-sm font-semibold text-slate-800">AI Copilot 极速配置</span>
@@ -43,9 +43,9 @@ export default function AICopilotChat({ onPresetSelect }) {
         {messages.length > 0 && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
             transition={{ type: 'tween', ease: 'easeInOut', duration: 0.25 }}
-            className="mb-2.5 space-y-1.5 max-h-44 overflow-y-auto scrollbar-thin">
+            className="shrink-0 space-y-1.5 max-h-44 overflow-y-auto scrollbar-thin mb-3">
             {messages.map((m, i) => (
-              <div key={i} className={`text-sm p-2 rounded-lg ${m.role === 'user' ? 'bg-teal-50 text-teal-700 ml-8' : 'bg-slate-50 text-slate-600 mr-4'}`}>{m.text}</div>
+              <div key={i} className={`text-sm p-2 rounded-lg ${m.role === 'user' ? 'bg-teal-50 text-teal-700 ml-4' : 'bg-slate-50 text-slate-600 mr-4'}`}>{m.text}</div>
             ))}
             {typing && (
               <div className="text-sm p-2 rounded-lg bg-slate-50 text-slate-600 mr-4">
@@ -56,20 +56,18 @@ export default function AICopilotChat({ onPresetSelect }) {
         )}
       </AnimatePresence>
 
-      <div className="flex flex-wrap gap-1 mb-2.5">
+      <div className="flex flex-col items-start gap-1.5 mb-3 shrink-0">
         {aiPresetCommands.map(cmd => (
           <button key={cmd.value} onClick={() => handleSend(cmd.label)} disabled={typing}
-            className="text-xs px-2 py-1 rounded-md bg-slate-50 border border-slate-200 text-slate-500 hover:border-teal-300 hover:text-teal-600 transition-colors disabled:opacity-50">{cmd.label}</button>
+            className="text-xs px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700 transition-colors disabled:opacity-50 text-left">{cmd.label}</button>
         ))}
       </div>
 
-      <div className="relative">
+      <div className="relative flex-1 min-h-0">
         <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }} disabled={typing}
           placeholder="描述你的活动需求，AI 自动填单..."
-          rows={3}
-          className="w-full bg-slate-50 border border-slate-200 rounded-lg py-3 pl-4 pr-[44px] pb-[44px] text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-violet-300 transition-colors disabled:opacity-50 resize-none h-auto"
-          style={{ minHeight: 'auto' }} />
+          className="w-full h-full bg-slate-50 border border-slate-200 rounded-lg py-2 pl-4 pr-[44px] text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-violet-300 transition-colors disabled:opacity-50 resize-none" />
         <button onClick={() => handleSend()} disabled={typing || !input.trim()}
           className="absolute right-4 bottom-4 w-7 h-7 flex items-center justify-center rounded-md bg-violet-600 text-white hover:bg-violet-700 transition-colors disabled:opacity-50">
           {typing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}

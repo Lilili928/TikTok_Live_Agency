@@ -23,7 +23,7 @@ export default function ROISandbox({ formData }) {
   const defaultFormula = `完赛率 = ${formData.stage1Diamond ? `78% - (${formData.stage1Diamond}÷1000)×12%` : '78% - (钻石÷1000)×12%'}\n总流水 = 参与人数 × 钻石目标 × 0.72 × 完赛率\n利润率 = (总流水 - 奖励支出) ÷ 总流水`;
 
   const statusCfg = {
-    safe: { icon: CheckCircle2, color: 'text-emerald-500', label: '安全', size: 'w-6 h-6', textSize: 'text-sm' },
+    safe: { icon: CheckCircle2, color: 'text-emerald-500', label: '安全', size: 'w-[18px] h-[18px]', textSize: 'text-sm' },
     warning: { icon: Sparkles, color: 'text-slate-600', label: '关注', size: 'w-4 h-4', textSize: 'text-xs' },
     risk: { icon: AlertTriangle, color: 'text-slate-600', label: '⚠️ 奖励溢出/亏损风险', size: 'w-4 h-4', textSize: 'text-xs' },
   };
@@ -50,14 +50,14 @@ export default function ROISandbox({ formData }) {
         <motion.div
           animate={roi.isRisky ? { boxShadow: ['0 0 0px rgba(244,63,94,0)', '0 0 12px rgba(244,63,94,0.08)', '0 0 0px rgba(244,63,94,0)'] } : {}}
           transition={{ type: 'tween', ease: 'easeInOut', duration: 2.5, repeat: roi.isRisky ? Infinity : 0 }}
-          className={`border border-gray-200 rounded-xl p-3.5 ${roi.roiStatus === 'safe' ? 'bg-emerald-50/60' : 'bg-white'} ${roi.isRisky ? 'border-rose-200' : ''}`}
+          className={`border border-gray-200 rounded-xl pt-2.5 pb-3 px-3.5 ${roi.roiStatus === 'safe' ? 'bg-emerald-50/60' : 'bg-white'} ${roi.isRisky ? 'border-rose-200' : ''}`}
         >
-          <div className={`flex items-center ${roi.roiStatus === 'safe' ? 'gap-2' : 'gap-1.5'}`}>
-            <StatusIcon className={`${status.size} ${status.color}`} />
-            <div>
+          <div className={`flex items-center justify-between ${roi.roiStatus === 'safe' ? 'gap-2' : 'gap-1.5'}`}>
+            <div className="flex items-center gap-2">
+              <StatusIcon className={`${status.size} ${status.color}`} />
               <span className={`${status.textSize} font-semibold ${status.color}`}>{status.label}</span>
-              <p className="text-xs text-slate-500">利润率 {roi.profitMargin}%</p>
             </div>
+            <span className="text-xs text-slate-500">利润率<span className="ml-1.5 text-sm text-slate-800 font-bold">{roi.profitMargin}%</span></span>
           </div>
           {roi.isRisky && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} transition={{ type: 'tween', duration: 0.25 }}
@@ -81,7 +81,7 @@ export default function ROISandbox({ formData }) {
               key={kpi.label}
               initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
               transition={{ type: 'tween', ease: 'easeInOut', duration: 0.2, delay: 0.04 * idx }}
-              className="bg-white border border-gray-200 rounded-xl px-3.5 pt-3.5 pb-2.5"
+              className="bg-white border border-gray-200 rounded-xl px-3.5 pt-3 pb-2.5"
             >
               <div className="flex items-center gap-1.5 mb-1.5">
                 <kpi.icon className="w-4 h-4 text-slate-600" strokeWidth={1.5} />
@@ -100,8 +100,8 @@ export default function ROISandbox({ formData }) {
         </div>
       </div>
 
-      <div className="space-y-3">
-        <div className="flex items-center justify-between mx-2">
+      <div className="space-y-3 flex-1 flex flex-col">
+        <div className="flex items-center justify-between mx-2 shrink-0">
           <span className="text-xs font-medium text-slate-500">AI 精算公式</span>
           <div className="flex items-center gap-2">
             {editingFormula ? (
@@ -116,11 +116,11 @@ export default function ROISandbox({ formData }) {
           </div>
         </div>
         {editingFormula ? (
-          <textarea value={formulaText || defaultFormula} onChange={e => setFormulaText(e.target.value)} rows={3}
-            className="w-full bg-[#F6F6F6] border border-gray-200 rounded-xl p-3.5 text-xs text-slate-700 leading-relaxed resize-none focus:outline-none focus:border-gray-300" />
+          <textarea value={formulaText || defaultFormula} onChange={e => setFormulaText(e.target.value)}
+            className="flex-1 w-full bg-[#F6F6F6] border border-gray-200 rounded-xl py-2.5 px-3.5 text-sm text-slate-700 leading-relaxed resize-none focus:outline-none focus:border-gray-300" />
         ) : (
-          <div className="bg-white border border-gray-200 rounded-xl p-3.5">
-            <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-line">{formulaText || defaultFormula}</p>
+          <div className="flex-1 bg-white border border-gray-200 rounded-xl p-3.5">
+            <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">{formulaText || defaultFormula}</p>
           </div>
         )}
       </div>

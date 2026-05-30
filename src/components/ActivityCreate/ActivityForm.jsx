@@ -61,7 +61,7 @@ function SortableTab({ id, n, isActive, onActivate, onDelete, canDelete, canDrag
   );
 }
 
-export default function ActivityForm({ formData, setFormData, onSectionClick }) {
+export default function ActivityForm({ formData, setFormData, onSectionClick, aiConfig }) {
   const updateField = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
   const activeStage = formData.activeStageTab || 'stage1';
 
@@ -366,6 +366,55 @@ export default function ActivityForm({ formData, setFormData, onSectionClick }) 
 
   const peakHeight = Math.max(...Object.values(stageHeights).map(h => h || 0), 0);
 
+  /* ── Apply AI config ── */
+  useEffect(() => {
+    if (!aiConfig?.stages) return;
+    const stages = aiConfig.stages;
+
+    // Apply stage gameplay modes
+    const gameplay = { stage1: 'goal', stage2: 'goal', stage3: 'goal' };
+    const indicators = { stage1: [{ label: '钻石数', values: [1000] }], stage2: [{ label: '钻石数', values: [1000] }], stage3: [{ label: '钻石数', values: [1000] }] };
+    const phaseCount = { stage1: 1, stage2: 1, stage3: 1 };
+    const rankingMetrics = { stage1: ['钻石数'], stage2: ['钻石数'], stage3: ['钻石数'] };
+
+    stages.forEach((stage, i) => {
+      const sk = `stage${i + 1}`;
+      if (stage.gameplayMode === 'ranking') gameplay[sk] = 'ranking';
+      else gameplay[sk] = 'goal';
+
+      if (stage.indicators?.length > 0) {
+        const inds = [];
+        let maxPhases = 1;
+        stage.indicators.forEach(ind => {
+          const phases = ind.phases?.length > 0 ? ind.phases : [1000];
+          if (phases.length > maxPhases) maxPhases = phases.length;
+          inds.push({ label: ind.name || '钻石数', values: phases });
+        });
+        indicators[sk] = inds;
+        phaseCount[sk] = maxPhases;
+      }
+
+      if (stage.gameplayMode === 'ranking') {
+        const metrics = stage.indicators?.map(i => i.name).filter(n => RANKING_METRIC_OPTIONS.includes(n)) || [];
+        if (metrics.length > 0) rankingMetrics[sk] = metrics;
+      }
+    });
+
+    setStageGameplay(gameplay);
+    setStageIndicators(indicators);
+    setStagePhaseCount(phaseCount);
+    setStageRankingMetrics(rankingMetrics);
+
+    // Apply rewards
+    if (aiConfig.rewards?.length > 0) {
+      setRewards(aiConfig.rewards.map((r, i) => ({
+        stageKey: `stage${(r.stageIndex || 0) + 1}`,
+        rule: r.condition || '按积分排名',
+        value: r.rewardContent || '',
+      })));
+    }
+  }, [aiConfig]);
+
   /* ── Delete stage with full state re-index ── */
   const deleteStage = (stageNum) => {
     const currentCount = formData.stageCount || 1;
@@ -455,7 +504,7 @@ export default function ActivityForm({ formData, setFormData, onSectionClick }) 
             <label className="text-xs text-slate-500 mb-2 block font-bold">活动名称 <span className="text-rose-400">*</span></label>
             <div className="relative">
               <input type="text" value={formData.name} onChange={e => updateField('name', e.target.value)} placeholder="输入活动名称" className="w-full bg-[#F2F2F2] border border-gray-200 rounded-md h-[30px] pl-3 pr-16 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-slate-300 focus:bg-[#EAEAEA]" />
-              <button className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs text-violet-500 hover:text-violet-600 font-medium whitespace-nowrap"><Sparkles className="w-3 h-3" />AI 润色</button>
+              <button className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs text-[#2CB4C1] hover:text-[#249ea8] font-medium whitespace-nowrap"><Sparkles className="w-3 h-3" />AI 润色</button>
             </div>
           </div>
           <div>
@@ -474,7 +523,7 @@ export default function ActivityForm({ formData, setFormData, onSectionClick }) 
               <div className="bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-slate-400 flex items-center gap-1"><Info className="w-3 h-3" />不知道如何配置？试一下这些规则</p>
-                  <button className="text-xs text-violet-500 hover:text-violet-600 flex items-center gap-1 whitespace-nowrap">
+                  <button className="text-xs text-[#2CB4C1] hover:text-[#249ea8] flex items-center gap-1 whitespace-nowrap">
                     <Sparkles className="w-3 h-3" />AI 推荐
                   </button>
                 </div>
@@ -678,7 +727,7 @@ export default function ActivityForm({ formData, setFormData, onSectionClick }) 
                     <div>
                       <div className="flex items-center justify-between mb-2 pr-4">
                         <label className="text-xs text-slate-500"><span>积分指标</span> <span className="text-rose-400">*</span></label>
-                        <button onClick={() => handleOneClickAIRecommend(sk)} className="text-xs text-violet-500 hover:text-violet-600 flex items-center gap-1 whitespace-nowrap">
+                        <button onClick={() => handleOneClickAIRecommend(sk)} className="text-xs text-[#2CB4C1] hover:text-[#249ea8] flex items-center gap-1 whitespace-nowrap">
                           <Sparkles className="w-3 h-3" />AI 推荐
                         </button>
                       </div>

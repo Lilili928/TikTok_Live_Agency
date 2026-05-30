@@ -1,77 +1,369 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Send, Loader2 } from 'lucide-react';
-import { aiPresetCommands } from '../../data/mockData';
+import { Sparkles, Send, Loader2, CheckCircle2, RotateCcw, PenLine } from 'lucide-react';
+import { callDeepSeek } from '../../utils/deepseek';
 
-export default function AICopilotChat({ onPresetSelect }) {
-  const [input, setInput] = useState('');
-  const [typing, setTyping] = useState(false);
-  const [typingText, setTypingText] = useState('');
-  const [messages, setMessages] = useState([]);
-  const inputRef = useRef(null);
+const DEEPSEEK_KEY = '';
 
-  const genResponse = (msg) => {
-    if (msg.includes('端午') || msg.includes('3万')) return `✅ 已收到指令！正在为你自动配置"端午粽情·开播狂欢礼"活动：\n\n📋 自动配置清单：\n• 活动命名：端午粽情·开播狂欢礼\n• 主播圈选：近期开播低迷组 (24人) + 高潜力新秀组 (12人)\n• Stage 1 指标：💎1,200钻 · ⏱️20小时 · 📅8天\n• 奖励预算：¥30,000 钻 (含税)\n• ROI 预测：+24% 利润率，预计总流水 ¥87,000\n\n🔧 左侧表单已自动填充完成，右侧沙盘已同步更新。请审阅并调整！`;
-    if (msg.includes('新主播') || msg.includes('1.5万')) return `✅ 已配置"新星闪耀·冷启动激励"活动：\n\n• 圈选：高潜力新秀组 (12人)\n• Stage 1 门槛：💎500钻 · ⏱️10小时 · 📅5天\n• ROI 预测：+32% 利润率\n\n左侧表单已填妥，请检查！`;
-    return `✅ 收到指令！已根据"${msg.slice(0, 20)}..."自动配置活动参数。左侧表单已填充，右侧ROI沙盘已更新，请审核。`;
+const SYSTEM_PROMPT = `You are a highly experienced Douyin (TikTok) Live Streamer Operations Expert.
+Your task is to design a highly professional streamer incentive campaign based on the user's raw requirements.
+
+CRITICAL: Output strictly in JSON format. Do not wrap in \`\`\`json. Must be directly parseable by JSON.parse().
+
+JSON SCHEMA:
+{
+  "basicInfo": {
+    "activityName": "string",
+    "visibleRange": "private" | "public" | "association_only",
+    "streamerSelection": { "type": "rule" | "username" | "all", "rules": ["string"] },
+    "needRegistration": boolean
+  },
+  "stages": [{
+    "gameplayMode": "target" | "ranking",
+    "taskType": "custom" | "streamer_growth" | "streamer_active",
+    "indicators": [{ "name": "string", "phases": [number] }],
+    "competitionDates": ["YYYY-MM-DD", "YYYY-MM-DD"]
+  }],
+  "rewards": [{ "stageIndex": 0, "condition": "string", "rewardContent": "string" }]
+}`;
+
+const DEFAULT_HISTORY = [
+  '端午腰部主播促活，预算3万钻',
+  '新主播冷启动激励，预算1.5万钻',
+  '头部主播冲榜赛，预算5万钻',
+  '全员开播时长激励，预算2万钻',
+  '新晋主播成长激励，预算8千钻',
+  '儿童节联名直播活动，预算1万钻',
+  '周末冲刺PK赛，预算6千钻',
+  '暑假流量扶持计划，预算4万钻',
+];
+
+/* ── Dynamic CoT text generator ── */
+function generateDynamicCoTTexts(input) {
+  const budgetMatch = input.match(/(\d+\.?\d*)万/);
+  const budget = budgetMatch ? `${budgetMatch[0]}` : '合理预算';
+  const isDuanwu = input.includes('端午');
+  const isNewStreamer = input.includes('新主播') || input.includes('新晋');
+  const isHead = input.includes('头部');
+  const targetGroup = isHead ? '头部大主播' : isNewStreamer ? '新签约主播' : '活跃腰部主播';
+  const theme = isDuanwu ? '端午黄金周' : '本月运营周期';
+
+  return {
+    step1: '基本信息分析',
+    step1Desc: `分析${theme}流量走势，定向筛查公会${targetGroup}基础表现…`,
+    step2: '活动赛段设计',
+    step2Desc: `规划专属赛道，对齐${budget}预算，设计多阶段梯度挑战任务…`,
+    step3: '主播奖励设计',
+    step3Desc: '精准测算ROI利润率方案，匹配千川流量券、专属推荐位与流水分成奖励…',
+    step4Loading: '正在填表…',
+    step4LoadingDesc: '正在同步赛段指标与规则，自动填充活动表单配置…',
+    step4Done: '填单完成，快去看看吧！',
+    step4DoneDesc: '表单数据已全部配置成功，快去右侧看看成果吧！',
+    successBanner: `✨ 已成功为您配置活动：${isDuanwu ? '端午促活计划' : isNewStreamer ? '新星成长计划' : isHead ? '头部冲榜计划' : '直播激励计划'}`,
   };
+}
 
-  const handleSend = (text) => {
-    const msg = text || input;
-    if (!msg.trim()) return;
-    setMessages(prev => [...prev, { role: 'user', text: msg }]);
-    setInput(''); setTyping(true); setTypingText('');
-    const resp = genResponse(msg);
-    let idx = 0;
+/* ── TypewriterText component ── */
+function TypewriterText({ text, delay = 25, onDone }) {
+  const [chars, setChars] = useState(0);
+  useEffect(() => {
+    setChars(0);
+    if (!text) return;
+    let i = 0;
     const timer = setInterval(() => {
-      if (idx < resp.length) { setTypingText(resp.slice(0, idx + 1)); idx++; }
-      else { clearInterval(timer); setTyping(false); setMessages(prev => [...prev, { role: 'ai', text: resp }]); setTypingText(''); onPresetSelect(msg); }
-    }, 12);
+      i++;
+      setChars(i);
+      if (i >= text.length) { clearInterval(timer); onDone?.(); }
+    }, delay);
+    return () => clearInterval(timer);
+  }, [text, delay]);
+
+  return <span>{text.slice(0, chars)}{chars < text.length && <span className="inline-block w-0.5 h-3 bg-slate-400 animate-pulse ml-px align-middle" />}</span>;
+}
+
+/* ── Milestone steps generator ── */
+function getMilestoneSteps(coTTexts) {
+  return [
+    { title: coTTexts.step1, desc: coTTexts.step1Desc },
+    { title: coTTexts.step2, desc: coTTexts.step2Desc },
+    { title: coTTexts.step3, desc: coTTexts.step3Desc },
+  ];
+}
+
+export default function AICopilotChat({ onPresetSelect, onAIConfig }) {
+  const [userInput, setUserInput] = useState('');
+  const [isThinking, setIsThinking] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [thinkingStep, setThinkingStep] = useState(0);
+  const [activePill, setActivePill] = useState('');
+  const [history, setHistory] = useState(() => {
+    try {
+      const saved = localStorage.getItem('aicopilot_history');
+      return saved ? JSON.parse(saved) : DEFAULT_HISTORY;
+    } catch { return DEFAULT_HISTORY; }
+  });
+  const [coTTexts, setCoTTexts] = useState(null);
+  const [successBanner, setSuccessBanner] = useState('');
+  const [isRefining, setIsRefining] = useState(false);
+  const [chatHistory, setChatHistory] = useState([]);
+  const [lastJSON, setLastJSON] = useState('');
+  const inputRef = useRef(null);
+  const scrollRef = useRef(null);
+  const stepTimerRef = useRef(null);
+
+  // Sync history to localStorage
+  useEffect(() => { localStorage.setItem('aicopilot_history', JSON.stringify(history)); }, [history]);
+
+  // Auto-scroll to bottom on new steps
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    }
+  }, [thinkingStep, isSuccess]);
+
+  // Cleanup timers
+  useEffect(() => () => { if (stepTimerRef.current) clearInterval(stepTimerRef.current); }, []);
+
+  const addToHistory = useCallback((msg) => {
+    setHistory(prev => { const f = prev.filter(h => h !== msg); return [msg, ...f].slice(0, 8); });
+  }, []);
+
+  const clearTimers = () => { if (stepTimerRef.current) { clearInterval(stepTimerRef.current); stepTimerRef.current = null; } };
+
+  const advanceStep = (step) => {
+    setThinkingStep(step);
+    return new Promise(r => setTimeout(r, 900));
   };
+
+  const startAIAnalysis = async (input) => {
+    const msg = input || userInput;
+    if (!msg.trim() || isThinking) return;
+    if (inputRef.current) inputRef.current.blur();
+
+    const isRefine = isSuccess;
+    addToHistory(msg);
+    setActivePill(msg);
+    setUserInput('');
+    setIsThinking(true);
+    setIsSuccess(false);
+    setThinkingStep(0);
+
+    if (isRefine) {
+      setIsRefining(true);
+      setThinkingStep(4); // keep first 4 steps green
+    }
+
+    // Build messages with context for refinement
+    let userPrompt = msg;
+    if (isRefine && lastJSON) {
+      userPrompt = `请根据我以下的补充微调要求，在上一轮生成的活动配置 JSON 的基础上进行修改，并务必输出修改/微调后的最新完整 JSON 数据，不要输出任何解释：\n\n上一轮JSON：${lastJSON}\n\n微调要求：${msg}`;
+    }
+
+    // CoT stepping
+    const texts = generateDynamicCoTTexts(msg);
+    setCoTTexts(texts);
+    setSuccessBanner(texts.successBanner);
+
+    if (!isRefine) {
+      await advanceStep(0);
+      await advanceStep(1);
+      await advanceStep(2);
+      await advanceStep(3);
+    }
+
+    // Call DeepSeek
+    try {
+      const response = await callDeepSeek(SYSTEM_PROMPT, userPrompt);
+      const jsonMatch = response.match(/\{[\s\S]*"basicInfo"[\s\S]*"rewards"[\s\S]*\}/);
+      if (jsonMatch) {
+        const jsonStr = jsonMatch[0];
+        setLastJSON(jsonStr);
+        const parsed = JSON.parse(jsonStr);
+        setIsSuccess(true);
+        setThinkingStep(isRefine ? 5 : 4);
+        if (isRefine) {
+          setSuccessBanner('活动方案已根据补充诉求成功微调就绪，请核对！');
+        } else {
+          setSuccessBanner(texts.successBanner.replace('✨ 已成功为您配置活动：', `✨ 已成功为您配置活动：${parsed.basicInfo?.activityName || '新活动'}`));
+        }
+        setTimeout(() => onAIConfig?.(parsed), 300);
+      } else {
+        setIsSuccess(true);
+        setThinkingStep(isRefine ? 5 : 4);
+      }
+      onPresetSelect?.(msg);
+    } catch (e) {
+      console.error('AI config failed:', e);
+      setIsSuccess(false);
+      setIsRefining(false);
+    }
+  };
+
+  const handleReset = () => {
+    clearTimers();
+    setIsThinking(false);
+    setIsSuccess(false);
+    setIsRefining(false);
+    setThinkingStep(0);
+    setCoTTexts(null);
+    setSuccessBanner('');
+    setUserInput('');
+    setActivePill('');
+    setChatHistory([]);
+    setLastJSON('');
+  };
+
+  const milestoneSteps = coTTexts ? getMilestoneSteps(coTTexts) : [];
+  const displayPills = history.length > 0 ? history : DEFAULT_HISTORY;
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
-      <div className="flex items-center justify-between mb-5 shrink-0">
-        <div className="flex items-center gap-1.5">
-          <Sparkles className="w-5 h-5 text-violet-500" />
-          <span className="text-sm font-semibold text-slate-800">AI Copilot 极速配置</span>
+    <div className="w-full h-[470px] flex-none bg-white rounded-xl border border-gray-100 shadow-sm pt-[12px] px-[16px] pb-[16px] flex flex-col justify-start overflow-hidden relative">
+      {/* A. Title row — h-[20px] */}
+      <div className="h-[20px] flex items-center justify-between shrink-0">
+        <span className="text-sm font-semibold text-slate-800">一键填单</span>
+        <div className="flex items-center gap-3">
+          <button onClick={handleReset} className="text-xs text-slate-400 hover:text-slate-600 transition-colors flex items-center gap-1">
+            <RotateCcw className="w-3 h-3" />重置
+          </button>
+          <button className="flex items-center gap-1 text-xs text-slate-400 hover:text-[#2CB4C1] transition-colors">
+            <PenLine className="w-3.5 h-3.5" />AI解析规则
+          </button>
         </div>
-        <button className="border border-gray-200 text-slate-600 rounded-md py-1 px-3 text-xs hover:bg-gray-50 transition-colors">选择模板</button>
       </div>
 
-      <AnimatePresence>
-        {messages.length > 0 && (
-          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
-            transition={{ type: 'tween', ease: 'easeInOut', duration: 0.25 }}
-            className="shrink-0 space-y-1.5 max-h-44 overflow-y-auto scrollbar-thin mb-3">
-            {messages.map((m, i) => (
-              <div key={i} className={`text-sm p-2 rounded-lg ${m.role === 'user' ? 'bg-teal-50 text-teal-700 ml-4' : 'bg-slate-50 text-slate-600 mr-4'}`}>{m.text}</div>
-            ))}
-            {typing && (
-              <div className="text-sm p-2 rounded-lg bg-slate-50 text-slate-600 mr-4">
-                {typingText}<span className="inline-block w-0.5 h-3 bg-tiktok-teal animate-pulse ml-0.5" />
+      {/* B. Mid slot — flex-1 fill, mt-[20px] */}
+      <div ref={scrollRef} className="flex-1 mt-[20px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] relative flex flex-col justify-start">
+        <AnimatePresence mode="wait">
+          {(isThinking || isSuccess) ? (
+            <motion.div key="cot" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }} transition={{ type: 'tween', ease: 'easeInOut', duration: 0.25 }}
+              className="flex flex-col flex-1 min-h-0"
+            >
+              {/* Top spacer — pushes timeline to bottom */}
+              <div className="flex-1 min-h-0" />
+              {/* Timeline wrapper — shrink-0, sticks to bottom */}
+              <div className="relative flex flex-col gap-3.5 pl-1 shrink-0">
+                {/* Timeline connector — perfectly centered within w-4 */}
+                <div className="absolute left-1 top-2 bottom-2 w-4 z-0 flex justify-center">
+                  <div className="w-[1px] h-full bg-gray-200" />
+                </div>
+
+              {milestoneSteps.map((step, i) => {
+                // Progressive: only render up to current step
+                if (!isSuccess && i > thinkingStep) return null;
+                const done = i < thinkingStep || isSuccess;
+                const active = !isSuccess && i === thinkingStep;
+                return (
+                  <div key={i} className="relative z-10 flex items-start gap-2.5">
+                    <div className="w-4 h-4 rounded-full bg-white flex items-center justify-center shrink-0 mt-0.5">
+                      {done ? <CheckCircle2 className="w-4 h-4 text-slate-500" />
+                       : active ? <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
+                       : <div className="w-4 h-4 rounded-full border-2 border-slate-200" />}
+                    </div>
+                    <div className="flex flex-col items-start text-left gap-0.5 flex-1 min-w-0">
+                      <p className={`text-[11px] font-semibold ${done ? 'text-slate-500' : active ? 'text-slate-800' : 'text-slate-400'}`}>
+                        {step.title}
+                      </p>
+                      <p className="text-[11px] text-slate-400">
+                        {active ? <TypewriterText text={step.desc} /> : step.desc}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Step 4: loading or done */}
+              {(thinkingStep >= 3 || isSuccess) && !isRefining && (
+                <div className="relative z-10 flex items-start gap-2.5">
+                  <div className="w-4 h-4 rounded-full bg-white flex items-center justify-center shrink-0 mt-0.5">
+                    {isSuccess ? (
+                      <CheckCircle2 className="w-4 h-4 text-slate-500" />
+                    ) : (
+                      <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
+                    )}
+                  </div>
+                  <div className="flex flex-col items-start text-left gap-0.5">
+                    <p className={`text-[11px] font-semibold ${isSuccess ? 'text-slate-500' : 'text-slate-500'}`}>
+                      {isSuccess ? (coTTexts?.step4Done || '填单完成，快去看看吧！') : (coTTexts?.step4Loading || '正在填表…')}
+                    </p>
+                    <p className={`text-[11px] ${isSuccess ? 'text-slate-400' : 'text-slate-400'}`}>
+                      {isSuccess ? (
+                        coTTexts?.step4DoneDesc || '表单数据已全部配置成功，快去右侧看看成果吧！'
+                      ) : (
+                        coTTexts?.step4LoadingDesc || '正在同步赛段指标与规则，自动填充活动表单配置…'
+                      )}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 5: refinement */}
+              {(isRefining || (isSuccess && thinkingStep >= 5)) && (
+                <div className="relative z-10 flex items-start gap-2.5">
+                  <div className="w-4 h-4 rounded-full bg-white flex items-center justify-center shrink-0 mt-0.5">
+                    {isSuccess ? (
+                      <CheckCircle2 className="w-4 h-4 text-slate-500" />
+                    ) : (
+                      <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
+                    )}
+                  </div>
+                  <div className="flex flex-col items-start text-left gap-0.5">
+                    <p className={`text-[11px] font-semibold ${isSuccess ? 'text-slate-500' : 'text-slate-800'}`}>
+                      {isSuccess ? '微调完成，表单已更新' : '补充信息分析'}
+                    </p>
+                    <p className={`text-[11px] ${isSuccess ? 'text-slate-400' : 'text-slate-400'}`}>
+                      {isSuccess ? (
+                        '活动方案已根据补充诉求成功微调就绪，请核对！'
+                      ) : (
+                        <TypewriterText text="正在根据补充诉求微调赛段指标与奖励配置…" />
+                      )}
+                    </p>
+                  </div>
+                </div>
+              )}
               </div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="flex flex-col items-start gap-1.5 mb-3 shrink-0">
-        {aiPresetCommands.map(cmd => (
-          <button key={cmd.value} onClick={() => handleSend(cmd.label)} disabled={typing}
-            className="text-xs px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700 transition-colors disabled:opacity-50 text-left">{cmd.label}</button>
-        ))}
+            </motion.div>
+          ) : (
+            <motion.div key="pills" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }} transition={{ type: 'tween', ease: 'easeInOut', duration: 0.25 }}
+              className="flex flex-col gap-[8px] justify-end h-full"
+            >
+              {displayPills.map((cmd, i) => (
+                <button key={i} onClick={() => { setUserInput(cmd); inputRef.current?.focus(); }}
+                  className="h-[28px] px-[12px] bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg text-xs text-slate-500 truncate transition-colors text-left w-fit max-w-full shrink-0 block leading-[28px]">
+                  {cmd}
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      <div className="relative flex-1 min-h-0">
-        <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }} disabled={typing}
+      {/* C. Textarea — h-[112px], mt-[12px] */}
+      <div className="h-[120px] mt-[12px] shrink-0 relative border border-gray-200 rounded-lg p-[8px] bg-gray-50 flex flex-col">
+        <textarea ref={inputRef} value={userInput}
+          onChange={e => setUserInput(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); startAIAnalysis(); } }}
+          disabled={isThinking}
           placeholder="描述你的活动需求，AI 自动填单..."
-          className="w-full h-full bg-slate-50 border border-slate-200 rounded-lg py-2 pl-4 pr-[44px] text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-violet-300 transition-colors disabled:opacity-50 resize-none" />
-        <button onClick={() => handleSend()} disabled={typing || !input.trim()}
-          className="absolute right-4 bottom-4 w-7 h-7 flex items-center justify-center rounded-md bg-violet-600 text-white hover:bg-violet-700 transition-colors disabled:opacity-50">
-          {typing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-        </button>
+          className="w-full h-full bg-transparent resize-none outline-none text-sm text-slate-700 placeholder-slate-400 pt-0.5 pl-0.5 pr-2 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+        />
+        <div className="absolute bottom-[6px] right-[6px]">
+          {isSuccess && !userInput.trim() ? (
+            <div className="bg-[#2CB4C1] text-white rounded-md px-2.5 py-1 text-sm flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5" />填表完成
+            </div>
+          ) : isThinking ? (
+            <div className="bg-[#2CB4C1] text-white rounded-md px-2.5 py-1 text-sm flex items-center gap-1.5">
+              <Loader2 className="w-3 h-3 animate-spin" />解析中
+            </div>
+          ) : (
+            <button onClick={() => startAIAnalysis()} disabled={!userInput.trim()}
+              className="bg-[#2CB4C1] hover:bg-[#249ea8] disabled:bg-slate-300 w-7 h-7 rounded-lg text-white transition-colors flex items-center justify-center">
+              <Send className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

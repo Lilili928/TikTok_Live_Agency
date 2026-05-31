@@ -30,7 +30,7 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
           onClick={() => setCollapsed(!collapsed)}
           onMouseEnter={() => setLogoHovered(true)}
           onMouseLeave={() => setLogoHovered(false)}
-          className={`relative w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+          className={`relative w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ml-1.5 ${
             collapsed ? 'hover:bg-slate-200' : ''
           }`}
         >
@@ -89,11 +89,13 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors text-left ${
+              className={`w-full flex items-center gap-2.5 rounded-lg transition-colors ${
+                collapsed ? 'h-[44px] justify-center' : 'px-3 py-2 justify-start text-left'
+              } ${
                 isActive ? 'bg-slate-100 text-slate-900' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'
               }`}
             >
-              <Icon className="w-4.5 h-4.5 shrink-0" strokeWidth={isActive ? 2 : 1.5} />
+              <Icon className="w-[18px] h-[18px] shrink-0" strokeWidth={isActive ? 2 : 1.5} />
               <AnimatePresence>
                 {!collapsed && (
                   <motion.span
@@ -117,9 +119,11 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
           return (
             <button
               key={item.id}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-500 transition-colors"
+              className={`w-full flex items-center gap-2.5 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-500 transition-colors ${
+                collapsed ? 'h-[44px] justify-center' : 'px-3 py-2 justify-start'
+              }`}
             >
-              <Icon className="w-4.5 h-4.5 shrink-0" strokeWidth={1.5} />
+              <Icon className="w-[18px] h-[18px] shrink-0" strokeWidth={1.5} />
               <AnimatePresence>
                 {!collapsed && (
                   <motion.span

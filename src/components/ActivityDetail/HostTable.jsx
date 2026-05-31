@@ -32,7 +32,7 @@ function AIPushButton({ host, onPush }) {
         className={`text-sm px-3 py-1.5 rounded-md transition-all font-medium whitespace-nowrap ${
           host.targetMet
             ? 'text-slate-400 bg-slate-100 opacity-60 cursor-not-allowed'
-            : 'bg-[#F2F2F2] text-slate-500 hover:bg-[#E6E6E6]'
+            : 'bg-[#F0F3F6] text-slate-500 hover:bg-[#E2E5E8]'
         }`}
       >
         AI 催播
@@ -79,7 +79,7 @@ function ProgressBar({ current, goal }) {
               initial={{ width: 0 }}
               animate={{ width: `${pct}%` }}
               transition={{ type: 'tween', ease: 'easeInOut', duration: 0.6 }}
-              className="h-full rounded-full bg-[#C3C3C3]"
+              className="h-full rounded-full bg-[#ABB4BE]"
             />
           </div>
         </div>
@@ -163,7 +163,7 @@ export default function HostTable({ reachedFilter = 'all' }) {
                 <span className="inline-flex items-center gap-1">有效开播天数 <ArrowUpDown className="w-3 h-3" /> <Info className="w-3 h-3" /></span>
               </th>
               <th className="text-left text-xs text-slate-500 font-medium px-4 py-2.5 min-w-[150px]">
-                <span className="inline-flex items-center gap-1"><Sparkles className="w-3.5 h-3.5 text-violet-400" />AI 预测</span>
+                <span className="inline-flex items-center gap-1"><Sparkles className="w-3.5 h-3.5 text-slate-500" />AI 预测</span>
               </th>
               <th className="text-left text-xs text-slate-500 font-medium px-4 py-2.5 sticky right-0 z-20 bg-gray-50/50 border-l border-[#E8E8E8] shadow-[0_0_1px_0_rgba(0,0,0,0.20),_0_8px_20px_0_rgba(0,0,0,0.12)]">
                 Action
@@ -188,7 +188,7 @@ export default function HostTable({ reachedFilter = 'all' }) {
                 <td className="px-4 py-2.5">
                   <div className="flex items-center gap-2.5">
                     <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold text-white"
-                      style={{ background: '#C3C3C3' }}>
+                      style={{ background: '#ABB4BE' }}>
                       {host.avatar}
                     </div>
                     <div>
@@ -230,9 +230,9 @@ export default function HostTable({ reachedFilter = 'all' }) {
                 {/* AI 预测 */}
                 <td className="px-4 py-2.5">
                   {host.prediction === 'pass' ? (
-                    <span className="inline-flex text-xs px-2 py-0.5 rounded-full font-medium bg-white text-slate-800 border border-gray-200">预测稳过</span>
+                    <span className="inline-flex text-xs px-2 py-0.5 rounded-full font-medium bg-white text-slate-800 border border-gray-200">Stable</span>
                   ) : (
-                    <span className="inline-flex text-xs px-2 py-0.5 rounded-full font-medium bg-rose-50/50 text-rose-700 border border-rose-100/60">预测未达标</span>
+                    <span className="inline-flex text-xs px-2 py-0.5 rounded-full font-medium bg-rose-50/50 text-rose-700 border border-rose-100/60">Critical</span>
                   )}
                 </td>
 
@@ -255,12 +255,12 @@ export default function HostTable({ reachedFilter = 'all' }) {
             <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="w-7 h-7 flex items-center justify-center rounded-md text-xs text-slate-400 font-medium hover:bg-slate-50 transition-colors disabled:opacity-30"><ChevronLeft className="w-3.5 h-3.5" /></button>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
               <button key={p} onClick={() => setCurrentPage(p)} className={`w-7 h-7 flex items-center justify-center rounded-md text-xs transition-colors ${
-                p === currentPage ? 'bg-[#EBF5F1] text-teal-600 font-medium' : 'text-slate-800 hover:bg-slate-50'
+                p === currentPage ? 'bg-[#E6F5F5] text-[#00C3C2] font-medium' : 'text-slate-800 hover:bg-slate-50'
               }`}>{p}</button>
             ))}
             <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="w-7 h-7 flex items-center justify-center rounded-md text-xs text-slate-400 font-medium hover:bg-slate-50 transition-colors disabled:opacity-30"><ChevronRight className="w-3.5 h-3.5" /></button>
             <div className="relative ml-1">
-              <select className="appearance-none bg-[#F2F2F2] border border-gray-200 rounded-md py-1.5 pl-2 pr-7 text-xs text-slate-800 focus:outline-none cursor-pointer font-medium">
+              <select className="appearance-none bg-[#F0F3F6] border border-gray-200 rounded-md py-1.5 pl-2 pr-7 text-xs text-slate-800 focus:outline-none cursor-pointer font-medium">
                 <option>10条/页</option>
                 <option>20条/页</option>
                 <option>50条/页</option>

@@ -6,7 +6,7 @@ function pad(n) {
 }
 
 const AnimatedValue = ({ value }) => (
-  <span className="relative overflow-hidden inline-flex items-center justify-center bg-gray-100 text-gray-800 font-bold rounded-md px-2.5 py-1 min-w-[32px] h-7 text-sm leading-none">
+  <span className="relative overflow-hidden inline-flex items-center justify-center bg-[#F0F3F6] text-gray-800 font-bold rounded-md px-2.5 py-1 min-w-[32px] h-7 text-sm leading-none">
     <AnimatePresence mode="popLayout">
       <motion.span
         key={value}
@@ -47,7 +47,7 @@ export default function CountdownTimer({ endDate }) {
     <div className="flex items-center gap-x-1.5 text-sm font-medium text-slate-500">
       <span className="text-slate-400">Ends in</span>
 
-      <span className="inline-flex items-center justify-center bg-gray-100 text-gray-800 font-bold rounded-md px-2 py-1 min-w-[24px] h-7 text-sm leading-none">
+      <span className="inline-flex items-center justify-center bg-[#F0F3F6] text-gray-800 font-bold rounded-md px-2 py-1 min-w-[24px] h-7 text-sm leading-none">
         {days}
       </span>
 

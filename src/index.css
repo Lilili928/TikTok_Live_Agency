@@ -28,6 +28,10 @@
     @apply bg-white border border-slate-100 rounded-xl shadow-sm;
   }
 
+  .ai-gradient {
+    background: linear-gradient(to top right, #8b5cf6, #14b8a6);
+  }
+
   .hide-scrollbar-dynamic::-webkit-scrollbar { width: 6px; }
   .hide-scrollbar-dynamic::-webkit-scrollbar-track { background: transparent; }
   .hide-scrollbar-dynamic::-webkit-scrollbar-thumb { background: transparent; border-radius: 3px; transition: background-color 0.3s ease; }

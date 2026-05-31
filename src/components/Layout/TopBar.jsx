@@ -18,7 +18,7 @@ export default function TopBar({ darkMode, setDarkMode, activeTab }) {
   const showSegments = activeTab === 'list';
 
   return (
-    <header className="h-14 border-b border-gray-100 bg-white flex items-center justify-between px-6 shrink-0 z-10">
+    <header className="h-14 border-b border-gray-200 bg-white flex items-center justify-between px-6 shrink-0 z-10">
       {/* Left: Page title + segment tabs (list page only) */}
       <div className="flex items-center gap-x-6">
         <span className="text-base font-semibold text-slate-800">

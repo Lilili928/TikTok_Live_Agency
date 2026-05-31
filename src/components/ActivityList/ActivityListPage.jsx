@@ -63,8 +63,8 @@ export default function ActivityListPage({ onNavigateToCreate, onNavigateToDetai
             const Icon = iconMap[card.icon];
             const iconColors = {
               Trophy: 'bg-slate-100 text-slate-500',
-              Swords: 'bg-rose-50 text-rose-400',
-              Library: 'bg-violet-50 text-violet-500',
+              Swords: 'bg-slate-100 text-slate-500',
+              Library: 'bg-slate-100 text-slate-500',
             };
             return (
               <motion.div
@@ -72,24 +72,32 @@ export default function ActivityListPage({ onNavigateToCreate, onNavigateToDetai
                 {...fadeUp} transition={{ ...fadeUp.transition, delay: idx * 0.06 }}
                 whileHover={{ y: -1 }}
                 onClick={() => { if (card.id === 'pk' || card.id === 'leaderboard') onNavigateToCreate(card.id === 'pk' ? 'dragon_boat_low_mid' : null); }}
-                className={`glass-card py-3 px-4 cursor-pointer group flex flex-col ${card.aiBadge ? 'ring-1 ring-violet-200/60' : ''}`}
+                className="glass-card py-3 px-4 cursor-pointer group flex flex-col overflow-hidden"
               >
                 <div className="flex items-center gap-4">
                   <div className={`w-10 h-10 rounded-lg ${iconColors[card.icon]} flex items-center justify-center shrink-0`}>
                     <Icon className="w-4.5 h-4.5" strokeWidth={1.5} />
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-base font-semibold text-slate-800 mb-0">{card.title}</h3>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-semibold text-slate-800">{card.title}</h3>
+                      {card.aiBadge && (
+                        <span className="text-xs text-[#00C3C2] bg-[#EFF9F9] px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0">
+                          <Sparkles className="w-3 h-3 text-[#00C3C2]" />AI 推荐
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm text-slate-400 mt-0.5">{card.desc}</p>
                   </div>
                   <Plus className="w-5 h-5 text-slate-400 shrink-0" strokeWidth={1.5} />
                 </div>
                 {card.aiBadge && (
-                  <div className="mt-2 self-start bg-violet-50/50 border border-violet-100/60 rounded-lg py-1.5 px-2.5 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-violet-400 shrink-0" />
-                    <p className="text-[11px] text-violet-700/80 leading-snug">
-                      本周公会开播率下降15%，点击一键创建促活PK赛（AI推荐度 98%）
-                    </p>
+                  <div className="max-h-0 group-hover:max-h-[60px] group-hover:mt-2 opacity-0 group-hover:opacity-100 transition-all duration-300 ease-out overflow-hidden">
+                    <div className="self-start bg-[#EFF9F9] border border-[#00C3C2]/20 rounded-lg py-1.5 px-2.5">
+                      <p className="text-xs text-[#00C3C2] leading-snug">
+                        本周公会开播率下降15%，点击一键创建促活PK赛（AI推荐度 98%）
+                      </p>
+                    </div>
                   </div>
                 )}
               </motion.div>
@@ -133,26 +141,26 @@ export default function ActivityListPage({ onNavigateToCreate, onNavigateToDetai
           <div className="flex items-center gap-3 mb-4">
             <div className="flex items-center">
               <div className="relative">
-                <select className="appearance-none bg-[#F2F2F2] hover:bg-[#E6E6E6] border-r-[2px] border-[#E8E8E8] rounded-l-lg h-[30px] pl-3 pr-7 text-sm text-slate-500 focus:outline-none cursor-pointer font-medium">
+                <select className="appearance-none bg-[#F0F3F6] hover:bg-[#E2E5E8] border-r-[2px] border-[#E8E8E8] rounded-l-lg h-[30px] pl-3 pr-7 text-sm text-slate-500 focus:outline-none cursor-pointer font-medium">
                   <option>Activity name</option>
                 </select>
                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400 pointer-events-none" />
               </div>
               <div className="relative">
                 <input type="text" placeholder="Search"
-                  className="w-48 bg-[#F2F2F2] hover:bg-[#E6E6E6] rounded-r-lg h-[30px] pl-3 pr-9 text-sm text-slate-700 placeholder-slate-400 focus:outline-none" />
+                  className="w-48 bg-[#F0F3F6] hover:bg-[#E2E5E8] rounded-r-lg h-[30px] pl-3 pr-9 text-sm text-slate-700 placeholder-slate-400 focus:outline-none" />
                 <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
               </div>
             </div>
             <div className="relative">
-              <select className="appearance-none bg-[#F2F2F2] hover:bg-[#E6E6E6] rounded-lg h-[30px] pl-3 pr-7 text-sm text-slate-500 focus:outline-none focus:border-slate-300 cursor-pointer font-medium">
+              <select className="appearance-none bg-[#F0F3F6] hover:bg-[#E2E5E8] rounded-lg h-[30px] pl-3 pr-7 text-sm text-slate-500 focus:outline-none focus:border-slate-300 cursor-pointer font-medium">
                 <option>Activity type</option>
                 <option>Please select</option>
               </select>
               <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400 pointer-events-none" />
             </div>
             <div className="relative">
-              <select className="appearance-none bg-[#F2F2F2] hover:bg-[#E6E6E6] rounded-lg h-[30px] pl-3 pr-7 text-sm text-slate-500 focus:outline-none focus:border-slate-300 cursor-pointer font-medium">
+              <select className="appearance-none bg-[#F0F3F6] hover:bg-[#E2E5E8] rounded-lg h-[30px] pl-3 pr-7 text-sm text-slate-500 focus:outline-none focus:border-slate-300 cursor-pointer font-medium">
                 <option>Status</option>
                 <option>Please select</option>
               </select>
@@ -175,7 +183,7 @@ export default function ActivityListPage({ onNavigateToCreate, onNavigateToDetai
                 <th className="text-left text-xs text-slate-500 font-medium px-4 py-2.5 min-w-[120px]">Registration</th>
                 <th className="text-left text-xs text-slate-500 font-medium px-4 py-2.5 min-w-[180px]">Created by</th>
                 <th className="text-left text-xs text-slate-500 font-medium px-4 py-2.5 min-w-[120px]">
-                  <span className="inline-flex items-center gap-1"><Sparkles className="w-3.5 h-3.5 text-violet-400" />AI Status</span>
+                  <span className="inline-flex items-center gap-1"><Sparkles className="w-3.5 h-3.5 text-slate-500" />AI Status</span>
                 </th>
                 <th className="text-left text-xs text-slate-500 font-medium px-4 py-2.5 sticky right-0 z-20 bg-[#fafafa] border-l border-[#E8E8E8] shadow-[0_0_1px_0_rgba(0,0,0,0.20),_0_8px_20px_0_rgba(0,0,0,0.12)]">Action</th>
               </tr>
@@ -207,12 +215,12 @@ export default function ActivityListPage({ onNavigateToCreate, onNavigateToDetai
                     <td className="px-4 py-2.5 min-w-[280px]">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 text-xs">
-                          <span className="w-10 text-center py-0.5 rounded bg-[#F2F2F2] text-slate-400 font-medium text-[11px] inline-block">Start</span>
+                          <span className="w-10 text-center py-0.5 rounded bg-[#F0F3F6] text-slate-400 font-medium text-[11px] inline-block">Start</span>
                           <span className="font-semibold text-slate-800">{act.startDate.split(' (')[0]}</span>
                           <span className="text-slate-400">({act.startDate.split('(')[1]}</span>
                         </div>
                         <div className="flex items-center gap-2 text-xs">
-                          <span className="w-10 text-center py-0.5 rounded bg-[#F2F2F2] text-slate-400 font-medium text-[11px] inline-block">End</span>
+                          <span className="w-10 text-center py-0.5 rounded bg-[#F0F3F6] text-slate-400 font-medium text-[11px] inline-block">End</span>
                           <span className="font-semibold text-slate-800">{act.endDate.split(' (')[0]}</span>
                           <span className="text-slate-400">({act.endDate.split('(')[1]}</span>
                         </div>
@@ -253,14 +261,14 @@ export default function ActivityListPage({ onNavigateToCreate, onNavigateToDetai
                       <div className="flex items-center gap-1.5">
                         <button
                           onClick={() => onNavigateToDetail && onNavigateToDetail()}
-                          className="text-sm px-3 py-1.5 rounded-md bg-[#F2F2F2] text-slate-500 hover:bg-[#E6E6E6] transition-colors font-medium"
+                          className="text-sm px-3 py-1.5 rounded-md bg-[#F0F3F6] text-slate-500 hover:bg-[#E2E5E8] transition-colors font-medium"
                         >
                           Details
                         </button>
-                        <button className="text-sm px-3 py-1.5 rounded-md bg-[#F2F2F2] text-slate-500 hover:bg-[#E6E6E6] transition-colors font-medium">
+                        <button className="text-sm px-3 py-1.5 rounded-md bg-[#F0F3F6] text-slate-500 hover:bg-[#E2E5E8] transition-colors font-medium">
                           Rankings
                         </button>
-                        <button className="w-[30px] h-[30px] flex items-center justify-center rounded-md bg-[#F2F2F2] text-slate-400 hover:text-slate-500 hover:bg-[#E6E6E6] transition-colors">
+                        <button className="w-[30px] h-[30px] flex items-center justify-center rounded-md bg-[#F0F3F6] text-slate-400 hover:text-slate-500 hover:bg-[#E2E5E8] transition-colors">
                           <MoreHorizontal className="w-4 h-4" />
                         </button>
                       </div>
@@ -281,12 +289,12 @@ export default function ActivityListPage({ onNavigateToCreate, onNavigateToDetai
             <button className="w-7 h-7 flex items-center justify-center rounded-md text-xs text-slate-400 font-medium hover:bg-slate-50 transition-colors"><ChevronLeft className="w-4 h-4" /></button>
             {['1', '2', '3', '4', '...', '10', '11'].map((p) => (
               <button key={p} className={`w-7 h-7 flex items-center justify-center rounded-md text-xs transition-colors ${
-                p === '1' ? 'bg-[#EBF5F1] text-teal-600 font-medium' : 'text-slate-800 hover:bg-slate-50'
+                p === '1' ? 'bg-[#E6F5F5] text-[#00C3C2] font-medium' : 'text-slate-800 hover:bg-slate-50'
               }`}>{p}</button>
             ))}
             <button className="w-7 h-7 flex items-center justify-center rounded-md text-xs text-slate-400 font-medium hover:bg-slate-50 transition-colors"><ChevronRight className="w-4 h-4" /></button>
             <div className="relative ml-1">
-              <select className="appearance-none bg-[#F2F2F2] border border-gray-200 rounded-md py-1.5 pl-2 pr-7 text-xs text-slate-800 focus:outline-none cursor-pointer font-medium">
+              <select className="appearance-none bg-[#F0F3F6] border border-gray-200 rounded-md py-1.5 pl-2 pr-7 text-xs text-slate-800 focus:outline-none cursor-pointer font-medium">
                 <option>10条/页</option>
                 <option>20条/页</option>
                 <option>50条/页</option>

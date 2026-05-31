@@ -106,8 +106,9 @@ export default function AIPushModal({ host, onClose }) {
         {/* Header */}
         <div className="flex items-center justify-between pl-4 pr-5 pt-3 pb-3.5 border-b border-[#E8E8E8]">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center">
-              <Sparkles className="w-3.5 h-3.5 text-violet-600" />
+            <div className="w-8 h-8 rounded-full relative flex items-center justify-center overflow-hidden">
+              <div className="absolute inset-0 ai-gradient opacity-[0.16]" />
+              <Sparkles className="w-3.5 h-3.5 text-[#34C2C1] relative z-10" />
             </div>
             <div>
               <h3 className="text-sm font-semibold text-slate-800">AI 智能催播</h3>
@@ -118,7 +119,7 @@ export default function AIPushModal({ host, onClose }) {
         </div>
 
         {/* Data Gap */}
-        <div className="px-6 py-3 bg-[#F2F2F2] border-b border-[#E8E8E8]">
+        <div className="px-6 py-3 bg-[#F3F6FA] border-b border-[#E8E8E8]">
           <div className="flex items-center gap-5 text-xs">
             <span className="text-slate-400">钻石<span className="ml-1.5 text-slate-700 font-medium">{host.diamondCurrent}/{host.diamondGoal}</span></span>
             <span className="text-slate-400">时长<span className="ml-1.5 text-slate-700 font-medium">{host.hourCurrent}/{host.hourGoal}h</span></span>
@@ -136,13 +137,13 @@ export default function AIPushModal({ host, onClose }) {
             </div>
             <div className="flex items-center gap-2">
               {loading ? (
-                <span className="text-xs flex items-center gap-1 text-violet-500"><Loader2 className="w-2.5 h-2.5 animate-spin" />AI 生成中...</span>
+                <span className="text-xs flex items-center gap-1 text-[#34C2C1]"><Loader2 className="w-2.5 h-2.5 animate-spin" />AI 生成中...</span>
               ) : polishing ? (
-                <span className="text-xs flex items-center gap-1 text-violet-500"><Loader2 className="w-2.5 h-2.5 animate-spin" />润色中...</span>
+                <span className="text-xs flex items-center gap-1 text-[#34C2C1]"><Loader2 className="w-2.5 h-2.5 animate-spin" />润色中...</span>
               ) : !editable.trim() ? (
-                <button onClick={handleGenerate} className="flex items-center gap-1 text-xs text-violet-600 hover:text-violet-700 transition-colors font-medium"><Sparkles className="w-3 h-3" />AI 生成</button>
+                <button onClick={handleGenerate} className="flex items-center gap-1 text-xs text-[#34C2C1] hover:text-[#249ea8] transition-colors font-medium"><Sparkles className="w-3 h-3" />AI 生成</button>
               ) : (
-                <button onClick={handlePolish} className="flex items-center gap-1 text-xs text-violet-600 hover:text-violet-700 transition-colors font-medium"><Sparkles className="w-3 h-3" />AI 润色</button>
+                <button onClick={handlePolish} className="flex items-center gap-1 text-xs text-[#34C2C1] hover:text-[#249ea8] transition-colors font-medium"><Sparkles className="w-3 h-3" />AI 润色</button>
               )}
             </div>
           </div>
@@ -152,7 +153,7 @@ export default function AIPushModal({ host, onClose }) {
             <textarea
               value={editable}
               onChange={e => setEditable(e.target.value)}
-              className="w-full h-full bg-violet-50/30 border border-[#E8E8E8] rounded-xl p-3.5 pb-10 text-sm text-slate-700 leading-relaxed resize-none focus:outline-none focus:border-violet-300"
+              className="w-full h-full bg-[#EFF9F9]/30 border border-[#E8E8E8] rounded-xl p-3.5 pb-10 text-sm text-slate-700 leading-relaxed resize-none focus:outline-none focus:border-[#34C2C1]"
               placeholder={loading ? '✨ DeepSeek AI 正在全力生成中...' : '输入或选择常用语，一键生成催播话术…'}
             />
 
@@ -178,8 +179,8 @@ export default function AIPushModal({ host, onClose }) {
                             isEditing
                               ? 'bg-rose-50 border-rose-200 text-rose-500 cursor-pointer'
                               : editable.includes(tag)
-                                ? 'bg-violet-50 border-violet-300 text-violet-600'
-                                : 'bg-gray-50 border-gray-200 text-slate-600 hover:border-violet-300 hover:text-violet-600 cursor-grab active:cursor-grabbing'
+                                ? 'bg-white border-[#34C2C1] text-[#34C2C1]'
+                                : 'bg-gray-50 border-gray-200 text-slate-600 hover:border-[#34C2C1]/30 hover:text-[#34C2C1] cursor-grab active:cursor-grabbing'
                           }`}
                         >
                           {tag}
@@ -200,7 +201,7 @@ export default function AIPushModal({ host, onClose }) {
                           onKeyDown={e => { if (e.key === 'Enter') addTag(); if (e.key === 'Escape') { setIsAdding(false); setNewTagText(''); } }}
                           onBlur={() => { if (!newTagText.trim()) { setIsAdding(false); setNewTagText(''); } }}
                           placeholder="输入标签，回车添加"
-                          className="w-full h-6 px-3 text-xs bg-white border border-violet-300 rounded-full focus:outline-none focus:border-violet-500 placeholder-slate-400"
+                          className="w-full h-6 px-3 text-xs bg-white border border-[#34C2C1]/30 rounded-full focus:outline-none focus:border-[#34C2C1] placeholder-slate-400"
                         />
                       </motion.div>
                     ) : (
@@ -218,7 +219,7 @@ export default function AIPushModal({ host, onClose }) {
                       onClick={() => setIsEditing(!isEditing)}
                       className={`w-6 h-6 flex items-center justify-center rounded-full border transition-all cursor-pointer leading-none ${
                         isEditing
-                          ? 'bg-violet-100 border-violet-300 text-violet-600'
+                          ? 'bg-white border-[#34C2C1] text-[#34C2C1]'
                           : 'bg-gray-50 border-gray-200 text-slate-400 hover:text-slate-600 hover:bg-gray-100'
                       }`}
                     >
@@ -233,12 +234,12 @@ export default function AIPushModal({ host, onClose }) {
 
         {/* Actions */}
         <div className="px-4 py-5 border-t border-[#E8E8E8] flex items-center gap-3">
-          <button onClick={handleCopy} className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#F2F2F2] text-slate-600 hover:bg-[#E6E6E6] text-sm transition-colors font-medium">
-            {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}{copied ? '已复制' : '一键复制'}
+          <button onClick={handleCopy} className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#F0F3F6] text-slate-600 hover:bg-[#E2E5E8] text-sm transition-colors font-medium">
+            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}{copied ? '已复制' : '一键复制'}
           </button>
           <div className="flex items-center gap-3 ml-auto">
-            <button onClick={onClose} className="flex items-center px-3.5 py-1.5 rounded-lg bg-[#F2F2F2] text-slate-600 hover:bg-[#E6E6E6] text-sm transition-colors font-medium">取消</button>
-            <button onClick={handleSend} disabled={loading || sending || sent} className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors disabled:opacity-50">
+            <button onClick={onClose} className="flex items-center px-3.5 py-1.5 rounded-lg bg-[#F0F3F6] text-slate-600 hover:bg-[#E2E5E8] text-sm transition-colors font-medium">取消</button>
+            <button onClick={handleSend} disabled={loading || sending || sent} className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-[#34C2C1] text-white text-sm font-medium hover:bg-[#249ea8] transition-colors disabled:opacity-50">
               {sent ? <><Check className="w-3 h-3" />已发送</> : sending ? <><Loader2 className="w-3 h-3 animate-spin" />发送中...</> : <><Send className="w-3 h-3" />确认发送</>}
             </button>
           </div>

@@ -1,9 +1,43 @@
 import { useState, useEffect, useRef } from 'react';
-import { Info, ChevronDown, Plus, MinusCircle, Sparkles, Calendar, Settings, X, Trash2, Target, Trophy, Check, GripVertical } from 'lucide-react';
+import { Info, ChevronDown, Plus, MinusCircle, Sparkles, Calendar, Settings, X, Trash2, Target, Trophy, Check, GripVertical, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { callDeepSeek } from '../../utils/deepseek';
+
+const POLISH_TITLE_PROMPT = `You are a professional Douyin (TikTok) Live Streaming Operations Copywriting Expert.
+Your task is to polish and refine the raw campaign/activity name provided by the user.
+The polished name must be highly attractive, operational, and match the style of live streaming incentive campaigns (e.g., using creative suffixes like "冲刺赛", "挑战赛", "狂欢节", "星光计划", "启航礼", "争霸赛", "巅峰赛").
+
+CRITICAL REQUIREMENT:
+Output ONLY the single polished campaign title string. Do not wrap it in quotes, markdown, or add any introductory or explaining text. It must be directly usable as the value of the input box.`;
+
+const RECOMMEND_TARGETS_PROMPT = `You are a professional Douyin (TikTok) Live Operations Campaign Strategist.
+Your task is to intelligently recommend progressive task targets for the active indicators in the form.
+
+You will receive:
+1. Campaign Name (reveals difficulty level).
+2. Active Indicators list (e.g., ["钻石数", "直播时长 (小时)"]).
+3. Number of phases for each indicator (e.g., 1, 2, or 3 phases).
+
+Based on the difficulty inferred from the campaign name:
+- Low/Medium Difficulty (e.g., "促活", "萌新", "新人", "体验"): Recommend achievable targets:
+  - "钻石数": Phase 1: ~1000, Phase 2: ~1800, Phase 3: ~2500
+  - "直播时长 (小时)": Phase 1: ~15, Phase 2: ~25, Phase 3: ~35
+  - "有效开播天数": Phase 1: ~5, Phase 2: ~8, Phase 3: ~12
+- High Difficulty (e.g., "巅峰", "冲刺", "硬核", "争霸"): Recommend challenging targets:
+  - "钻石数": Phase 1: ~3000, Phase 2: ~5000, Phase 3: ~8000
+  - "直播时长 (小时)": Phase 1: ~30, Phase 2: ~45, Phase 3: ~60
+  - "有效开播天数": Phase 1: ~10, Phase 2: ~15, Phase 3: ~20
+
+CRITICAL: Output strict JSON. No markdown. No explanation.
+JSON SCHEMA:
+{
+  "recommendations": [
+    { "name": "string (exact match)", "values": [number] }
+  ]
+}`;
 
 function RadioGroup({ options, value, onChange }) {
   return (
@@ -64,6 +98,78 @@ function SortableTab({ id, n, isActive, onActivate, onDelete, canDelete, canDrag
 export default function ActivityForm({ formData, setFormData, onSectionClick, aiConfig }) {
   const updateField = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
   const activeStage = formData.activeStageTab || 'stage1';
+
+  // Activity name polish
+  const [isPolishing, setIsPolishing] = useState(false);
+
+  const handleAIPolishTitle = async () => {
+    const currentName = formData.name?.trim();
+    if (!currentName || isPolishing) return;
+    setIsPolishing(true);
+    try {
+      const polished = await callDeepSeek(POLISH_TITLE_PROMPT, currentName);
+      if (polished?.trim()) {
+        updateField('name', polished.trim());
+      }
+    } catch (e) { console.error('Title polish failed:', e); }
+    finally { setIsPolishing(false); }
+  };
+
+  // Indicator AI recommend
+  const [isRecommending, setIsRecommending] = useState(false);
+  const [isRecommendingRewards, setIsRecommendingRewards] = useState(false);
+
+  const handleOneClickAIRecommend = async (sk) => {
+    if (isRecommending) return;
+    const inds = stageIndicators[sk] || [];
+    const pc = stagePhaseCount[sk] || 1;
+    const indNames = inds.map(i => i.label);
+    const userMsg = JSON.stringify({
+      campaignName: formData.name || '直播活动',
+      indicators: indNames,
+      phasesPerIndicator: pc,
+    });
+    setIsRecommending(true);
+    try {
+      const response = await callDeepSeek(RECOMMEND_TARGETS_PROMPT, userMsg);
+      const jsonMatch = response.match(/\{[\s\S]*"recommendations"[\s\S]*\}/);
+      if (jsonMatch) {
+        const data = JSON.parse(jsonMatch[0]);
+        const recs = data.recommendations || [];
+        setStageIndicators(prev => ({
+          ...prev,
+          [sk]: prev[sk].map(ind => {
+            const rec = recs.find(r => r.name === ind.label);
+            if (rec && rec.values?.length > 0) {
+              // Pad or trim values to match phase count
+              const vals = [...rec.values];
+              while (vals.length < pc) vals.push(vals[vals.length - 1] || 0);
+              return { ...ind, values: vals.slice(0, pc) };
+            }
+            return ind;
+          }),
+        }));
+      }
+    } catch (e) { console.error('Indicator recommend failed:', e); }
+    finally { setIsRecommending(false); }
+  };
+
+  const handleAIRewardRecommend = async () => {
+    if (isRecommendingRewards) return;
+    const rewInfo = rewards.map(r => ({ stage: r.stageKey, condition: r.rule }));
+    const userMsg = JSON.stringify({ activityName: formData.name || '直播活动', rewards: rewInfo });
+    setIsRecommendingRewards(true);
+    try {
+      const sp = 'You are a Douyin Live Operations Reward Designer. Based on the campaign name and reward structure, recommend specific reward content per row. Use realistic MCN rewards. Output ONLY a JSON array of strings, same order as input. No markdown. No explanation.';
+      const response = await callDeepSeek(sp, userMsg);
+      const m = response.match(/\[[\s\S]*\]/);
+      if (m) {
+        const recs = JSON.parse(m[0]);
+        if (Array.isArray(recs)) setRewards(prev => prev.map((r, i) => ({ ...r, value: recs[i] || r.value || '' })));
+      }
+    } catch (e) { console.error('Reward recommend failed:', e); }
+    finally { setIsRecommendingRewards(false); }
+  };
 
   /* ═══════════════════════════════════════════
      Stage‑local business state
@@ -218,22 +324,6 @@ export default function ActivityForm({ formData, setFormData, onSectionClick, ai
     }));
   };
 
-  // AI 默认推荐值映射
-  const AI_DEFAULTS = {
-    '钻石数': 1000, '直播时长 (小时)': 20, '有效开播天数': 8,
-    'PK 钻石数': 500, 'PK 场次': 10, 'PK 胜利场次': 5,
-  };
-
-  const handleOneClickAIRecommend = (sk) => {
-    setStageIndicators(prev => ({
-      ...prev,
-      [sk]: prev[sk].map(ind => ({
-        ...ind,
-        values: ind.values.map(() => AI_DEFAULTS[ind.label] ?? 0),
-      })),
-    }));
-  };
-
   const toggleRankingMetric = (sk, m) => setStageRankingMetrics(prev => ({
     ...prev, [sk]: prev[sk].includes(m) ? prev[sk].filter(x => x !== m) : [...prev[sk], m],
   }));
@@ -241,6 +331,32 @@ export default function ActivityForm({ formData, setFormData, onSectionClick, ai
   /* ── Rule tags (添加主播) ── */
   const DEFAULT_RULE_TAGS = ['营收范围', '新主播活跃', '老主播营收', '未达成活跃任务', '未达成 M1 成材'];
   const [ruleTags, setRuleTags] = useState(DEFAULT_RULE_TAGS);
+  const [selectedRules, setSelectedRules] = useState([]);
+  const [isRecommendingRules, setIsRecommendingRules] = useState(false);
+
+  const toggleRule = (tag) => {
+    setSelectedRules(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
+  };
+
+  // Reset selected rules when form name is cleared (cancel)
+  useEffect(() => { if (!formData.name) setSelectedRules([]); }, [formData.name]);
+
+  const handleAIRecommendRules = async () => {
+    if (isRecommendingRules) return;
+    const sp = `You are a Douyin (TikTok) Live Operations Campaign Strategist. Your task is to recommend which streamer filtering rules are most appropriate for a given campaign name. The available rules are exactly: ["营收范围", "新主播活跃", "老主播营收", "未达成活跃任务", "未达成 M1 成材"]. Analyze the campaign name and select the 1 to 3 most relevant rules. Output ONLY a JSON array of strings, e.g. ["新主播活跃", "未达成 M1 成材"]. No markdown. No explanation.`;
+    setIsRecommendingRules(true);
+    try {
+      const response = await callDeepSeek(sp, formData.name || '直播活动');
+      const m = response.match(/\[[\s\S]*\]/);
+      if (m) {
+        const recs = JSON.parse(m[0]);
+        if (Array.isArray(recs)) {
+          setSelectedRules(recs.filter(r => DEFAULT_RULE_TAGS.includes(r) || ruleTags.includes(r)));
+        }
+      }
+    } catch (e) { console.error('Rule recommend failed:', e); }
+    finally { setIsRecommendingRules(false); }
+  };
   const [isAddingRule, setIsAddingRule] = useState(false);
   const [newRuleText, setNewRuleText] = useState('');
   const [isEditingRules, setIsEditingRules] = useState(false);
@@ -520,14 +636,19 @@ export default function ActivityForm({ formData, setFormData, onSectionClick, ai
   return (
     <div className="space-y-5">
       {/* 基础信息 */}
-      <div id="basic-info" className="bg-white rounded-xl border border-gray-100 pt-5 pb-6 px-6 shadow-sm" onClickCapture={() => onSectionClick?.('basic-info')}>
+      <div id="basic-info" className="bg-white rounded-2xl border border-gray-200 pt-5 pb-6 px-6" onClickCapture={() => onSectionClick?.('basic-info')}>
         <h3 className="text-sm font-semibold text-slate-800 mb-5">基础信息</h3>
         <div className="space-y-5">
           <div>
             <label className="text-xs text-slate-500 mb-2 block font-bold">活动名称 <span className="text-rose-400">*</span></label>
             <div className="relative">
-              <input type="text" value={formData.name} onChange={e => updateField('name', e.target.value)} placeholder="输入活动名称" className="w-full bg-[#F2F2F2] border border-gray-200 rounded-md h-[30px] pl-3 pr-16 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-slate-300 focus:bg-[#EAEAEA]" />
-              <button className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs text-[#2CB4C1] hover:text-[#249ea8] font-medium whitespace-nowrap"><Sparkles className="w-3 h-3" />AI 润色</button>
+              <input type="text" value={formData.name} onChange={e => updateField('name', e.target.value)} placeholder="输入活动名称" className="w-full bg-slate-50 border border-slate-200 rounded-lg h-[30px] pl-4 pr-20 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-[#2CB4C1]" />
+              <button
+                onClick={handleAIPolishTitle}
+                disabled={isPolishing}
+                className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs text-[#2CB4C1] hover:text-[#249ea8] font-medium whitespace-nowrap disabled:opacity-50">
+                {isPolishing ? <><Loader2 className="w-3 h-3 animate-spin" />润色中...</> : <><Sparkles className="w-3 h-3" />AI 润色</>}
+              </button>
             </div>
           </div>
           <div>
@@ -546,26 +667,32 @@ export default function ActivityForm({ formData, setFormData, onSectionClick, ai
               <div className="bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-slate-400 flex items-center gap-1"><Info className="w-3 h-3" />不知道如何配置？试一下这些规则</p>
-                  <button className="text-xs text-[#2CB4C1] hover:text-[#249ea8] flex items-center gap-1 whitespace-nowrap">
-                    <Sparkles className="w-3 h-3" />AI 推荐
+                  <button onClick={handleAIRecommendRules} disabled={isRecommendingRules}
+                    className="text-xs text-[#2CB4C1] hover:text-[#249ea8] flex items-center gap-1 whitespace-nowrap disabled:opacity-50">
+                    {isRecommendingRules ? <><Loader2 className="w-3 h-3 animate-spin" />推荐中...</> : <><Sparkles className="w-3 h-3" />AI 推荐</>}
                   </button>
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5">
                   {/* Dynamic rule tags */}
-                  {ruleTags.map(tag => (
+                  {ruleTags.map(tag => {
+                    const selected = selectedRules.includes(tag);
+                    return (
                     <button
                       key={tag}
-                      onClick={() => { if (isEditingRules) removeRuleTag(tag); }}
+                      onClick={() => { if (isEditingRules) removeRuleTag(tag); else toggleRule(tag); }}
                       className={`text-xs px-3 py-1 rounded-full border transition-colors ${
                         isEditingRules
                           ? 'bg-rose-50 border-rose-200 text-rose-500 cursor-pointer'
-                          : 'bg-white border-gray-200 text-slate-500 hover:border-gray-300'
+                          : selected
+                            ? 'text-[#34C2C1] border-[#34C2C1] bg-[#34C2C1]/5'
+                            : 'bg-white border-gray-200 text-slate-500 hover:border-gray-300'
                       }`}
                     >
                       {tag}
                       {isEditingRules && <span className="ml-0.5">&times;</span>}
                     </button>
-                  ))}
+                    );
+                  })}
                   {/* + button with inline input */}
                   {isAddingRule ? (
                     <input
@@ -613,7 +740,7 @@ export default function ActivityForm({ formData, setFormData, onSectionClick, ai
       {/* 赛段信息 */}
       <div
         id="stage-info"
-        className="bg-white rounded-xl border border-gray-100 shadow-sm transition-[min-height] duration-200"
+        className="bg-white rounded-2xl border border-gray-200 transition-[min-height] duration-200"
         onClickCapture={() => onSectionClick?.('stage-info')}
         style={{ minHeight: peakHeight ? `${peakHeight}px` : 'auto' }}
       >
@@ -694,7 +821,7 @@ export default function ActivityForm({ formData, setFormData, onSectionClick, ai
                           {/* Trigger card */}
                           <button
                             onClick={() => setGameplayDropdownOpen(!gameplayDropdownOpen)}
-                            className="w-full flex items-center gap-3 py-2 px-4 rounded-lg border border-gray-200 bg-[#F2F2F2] text-left hover:bg-[#E6E6E6] transition-colors"
+                            className="w-full flex items-center gap-3 py-2 px-4 rounded-lg border border-slate-200 bg-slate-50 text-left hover:bg-slate-100 transition-colors"
                           >
                             <Icon className="w-[18px] h-[18px] shrink-0 text-slate-500" />
                             <div className="flex-1 min-w-0">
@@ -750,8 +877,9 @@ export default function ActivityForm({ formData, setFormData, onSectionClick, ai
                     <div>
                       <div className="flex items-center justify-between mb-2 pr-4">
                         <label className="text-xs text-slate-500"><span>积分指标</span> <span className="text-rose-400">*</span></label>
-                        <button onClick={() => handleOneClickAIRecommend(sk)} className="text-xs text-[#2CB4C1] hover:text-[#249ea8] flex items-center gap-1 whitespace-nowrap">
-                          <Sparkles className="w-3 h-3" />AI 推荐
+                        <button onClick={() => handleOneClickAIRecommend(sk)} disabled={isRecommending}
+                          className="text-xs text-[#2CB4C1] hover:text-[#249ea8] flex items-center gap-1 whitespace-nowrap disabled:opacity-50">
+                          {isRecommending ? <><Loader2 className="w-3 h-3 animate-spin" />计算中...</> : <><Sparkles className="w-3 h-3" />AI 推荐</>}
                         </button>
                       </div>
                       <div className="border border-gray-200 rounded-[10px] overflow-hidden">
@@ -993,8 +1121,14 @@ export default function ActivityForm({ formData, setFormData, onSectionClick, ai
       </div>
 
       {/* ===== 主播奖励（仅赛段/条件/奖励三列，无任何积分换算）===== */}
-      <div id="rewards-info" className="bg-white rounded-xl border border-gray-100 pt-5 pb-6 px-6 shadow-sm" onClickCapture={() => onSectionClick?.('rewards-info')}>
-        <h3 className="text-sm font-semibold text-slate-800 mb-5">主播奖励 <span className="text-rose-400">*</span></h3>
+      <div id="rewards-info" className="bg-white rounded-2xl border border-gray-200 pt-5 pb-6 px-6" onClickCapture={() => onSectionClick?.('rewards-info')}>
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-sm font-semibold text-slate-800">主播奖励 <span className="text-rose-400">*</span></h3>
+          <button onClick={handleAIRewardRecommend} disabled={isRecommendingRewards}
+            className="text-xs text-[#2CB4C1] hover:text-[#249ea8] flex items-center gap-1 whitespace-nowrap disabled:opacity-50 mr-4">
+            {isRecommendingRewards ? <><Loader2 className="w-3 h-3 animate-spin" />生成中...</> : <><Sparkles className="w-3 h-3" />AI 推荐</>}
+          </button>
+        </div>
         <div className="border border-gray-200 rounded-[10px] overflow-hidden"><table className="w-full table-fixed">
           <thead><tr className="bg-gray-50/50 border-b border-gray-200"><th className="text-left text-xs text-slate-500 font-medium pl-3 pr-1.5 py-2 w-[140px]">赛段</th><th className="text-left text-xs text-slate-500 font-medium px-1.5 py-2 w-[220px]">完成条件</th><th className="text-left text-xs text-slate-500 font-medium px-1.5 py-2">奖励内容</th>{rewards.length > 1 && <th className="w-10" />}</tr></thead>
           <tbody>{rewards.map((r, idx) => (

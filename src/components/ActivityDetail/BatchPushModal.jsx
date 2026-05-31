@@ -81,13 +81,14 @@ export default function BatchPushModal({ hosts, onClose }) {
         {/* Header */}
         <div className="flex items-center justify-between pl-4 pr-5 pt-3 pb-3.5 border-b border-[#E8E8E8]">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center">
-              <Sparkles className="w-3.5 h-3.5 text-violet-600" />
+            <div className="w-8 h-8 rounded-full relative flex items-center justify-center overflow-hidden">
+              <div className="absolute inset-0 ai-gradient opacity-[0.16]" />
+              <Sparkles className="w-3.5 h-3.5 text-[#34C2C1] relative z-10" />
             </div>
             <div>
               <h3 className="text-sm font-semibold text-slate-800">AI 智能催播</h3>
               <p className="text-xs text-slate-400 mt-0.5">
-                将对{targetMode === 'predicted-fail' ? '预测未达标' : '任务未完成'}的 {activeTargets.length} 位主播进行批量催播
+                将对{targetMode === 'predicted-fail' ? 'Critical' : '任务未完成'}的 {activeTargets.length} 位主播进行批量催播
               </p>
             </div>
           </div>
@@ -95,13 +96,13 @@ export default function BatchPushModal({ hosts, onClose }) {
         </div>
 
         {/* Data */}
-        <div className="px-6 py-3 bg-[#F2F2F2] border-b border-[#E8E8E8]">
+        <div className="px-6 py-3 bg-[#F3F6FA] border-b border-[#E8E8E8]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 text-xs">
               <span className="text-xs font-medium text-slate-700">催播对象</span>
               <div className="flex items-center gap-1.5">
                 <button onClick={() => setTargetMode('all-incomplete')} className={`px-2.5 py-0.5 rounded-full border transition-colors ${targetMode === 'all-incomplete' ? 'bg-white border-gray-300 text-slate-700 font-medium' : 'bg-transparent border-transparent text-slate-400 hover:text-slate-600'}`}>任务未完成</button>
-                <button onClick={() => setTargetMode('predicted-fail')} className={`px-2.5 py-0.5 rounded-full border transition-colors ${targetMode === 'predicted-fail' ? 'bg-white border-gray-300 text-slate-700 font-medium' : 'bg-transparent border-transparent text-slate-400 hover:text-slate-600'}`}>预测未达标</button>
+                <button onClick={() => setTargetMode('predicted-fail')} className={`px-2.5 py-0.5 rounded-full border transition-colors ${targetMode === 'predicted-fail' ? 'bg-white border-gray-300 text-slate-700 font-medium' : 'bg-transparent border-transparent text-slate-400 hover:text-slate-600'}`}>Critical</button>
               </div>
             </div>
             <button onClick={() => setShowHostList(true)} className="text-xs text-slate-400 hover:text-slate-600 transition-colors">查看名单</button>
@@ -117,20 +118,20 @@ export default function BatchPushModal({ hosts, onClose }) {
             </div>
             <div className="flex items-center gap-2">
               {loading ? (
-                <span className="text-xs flex items-center gap-1 text-violet-500"><Loader2 className="w-2.5 h-2.5 animate-spin" />AI 生成中...</span>
+                <span className="text-xs flex items-center gap-1 text-[#34C2C1]"><Loader2 className="w-2.5 h-2.5 animate-spin" />AI 生成中...</span>
               ) : polishing ? (
-                <span className="text-xs flex items-center gap-1 text-violet-500"><Loader2 className="w-2.5 h-2.5 animate-spin" />润色中...</span>
+                <span className="text-xs flex items-center gap-1 text-[#34C2C1]"><Loader2 className="w-2.5 h-2.5 animate-spin" />润色中...</span>
               ) : !text.trim() ? (
-                activeTargets.length > 0 && <button onClick={handleGenerate} className="flex items-center gap-1 text-xs text-violet-600 hover:text-violet-700 transition-colors font-medium"><Sparkles className="w-3 h-3" />AI 生成</button>
+                activeTargets.length > 0 && <button onClick={handleGenerate} className="flex items-center gap-1 text-xs text-[#34C2C1] hover:text-[#249ea8] transition-colors font-medium"><Sparkles className="w-3 h-3" />AI 生成</button>
               ) : (
-                <button onClick={handlePolish} className="flex items-center gap-1 text-xs text-violet-600 hover:text-violet-700 transition-colors font-medium"><Sparkles className="w-3 h-3" />AI 润色</button>
+                <button onClick={handlePolish} className="flex items-center gap-1 text-xs text-[#34C2C1] hover:text-[#249ea8] transition-colors font-medium"><Sparkles className="w-3 h-3" />AI 润色</button>
               )}
             </div>
           </div>
 
           <div className="relative flex-1">
             <textarea value={text} onChange={e => setText(e.target.value)}
-              className="w-full h-full bg-violet-50/30 border border-[#E8E8E8] rounded-xl p-3.5 pb-10 text-sm text-slate-700 leading-relaxed resize-none focus:outline-none focus:border-violet-300"
+              className="w-full h-full bg-[#EFF9F9]/30 border border-[#E8E8E8] rounded-xl p-3.5 pb-10 text-sm text-slate-700 leading-relaxed resize-none focus:outline-none focus:border-[#34C2C1]"
               placeholder={loading ? '✨ DeepSeek AI 正在全力生成中...' : '输入或选择常用语，一键生成催播话术…'}
             />
             <div className="absolute bottom-3 left-3 right-3">
@@ -141,7 +142,7 @@ export default function BatchPushModal({ hosts, onClose }) {
                       <motion.div layout>
                         <button
                           onClick={() => { isEditing ? removeTag(tag) : (text.includes(tag) ? setText(prev => prev.replace(new RegExp(tag + '，?', 'g'), '').replace(/，$/, '')) : setText(prev => prev + (prev && !prev.endsWith('，') ? '，' : '') + tag + '，')); }}
-                          className={`text-xs px-2.5 h-6 flex items-center rounded-full border transition-colors select-none ${isEditing ? 'bg-rose-50 border-rose-200 text-rose-500 cursor-pointer' : text.includes(tag) ? 'bg-violet-50 border-violet-300 text-violet-600' : 'bg-white border-gray-200 text-slate-500 hover:border-violet-300 hover:text-violet-600'}`}
+                          className={`text-xs px-2.5 h-6 flex items-center rounded-full border transition-colors select-none ${isEditing ? 'bg-rose-50 border-rose-200 text-rose-500 cursor-pointer' : text.includes(tag) ? 'bg-white border-[#34C2C1] text-[#34C2C1]' : 'bg-white border-gray-200 text-slate-500 hover:border-[#34C2C1]/30 hover:text-[#34C2C1]'}`}
                         >
                           {tag}{isEditing && <span className="ml-1 text-rose-400">&times;</span>}
                         </button>
@@ -154,14 +155,14 @@ export default function BatchPushModal({ hosts, onClose }) {
                         <input type="text" value={newTagText} onChange={e => setNewTagText(e.target.value.slice(0, 20))}
                           onKeyDown={e => { if (e.key === 'Enter') addTag(); if (e.key === 'Escape') { setIsAdding(false); setNewTagText(''); } }}
                           onBlur={() => { if (!newTagText.trim()) { setIsAdding(false); setNewTagText(''); } }}
-                          placeholder="输入标签，回车添加" className="w-full h-6 px-3 text-xs bg-white border border-violet-300 rounded-full focus:outline-none focus:border-violet-500 placeholder-slate-400" />
+                          placeholder="输入标签，回车添加" className="w-full h-6 px-3 text-xs bg-white border border-[#34C2C1] rounded-full focus:outline-none focus:border-[#34C2C1] placeholder-slate-400" />
                       </motion.div>
                     ) : (
                       <button onClick={() => setIsAdding(true)} className="w-6 h-6 flex items-center justify-center bg-gray-50 border border-gray-200 rounded-full text-slate-400 hover:text-slate-600 hover:bg-gray-100 transition-all cursor-pointer leading-none"><span className="text-sm -mt-px">+</span></button>
                     )}
                   </motion.div>
                   <motion.div key="settings-btn" layout>
-                    <button onClick={() => setIsEditing(!isEditing)} className={`w-6 h-6 flex items-center justify-center rounded-full border transition-all cursor-pointer leading-none ${isEditing ? 'bg-violet-100 border-violet-300 text-violet-600' : 'bg-gray-50 border-gray-200 text-slate-400 hover:text-slate-600 hover:bg-gray-100'}`}>
+                    <button onClick={() => setIsEditing(!isEditing)} className={`w-6 h-6 flex items-center justify-center rounded-full border transition-all cursor-pointer leading-none ${isEditing ? 'bg-white border-[#34C2C1] text-[#34C2C1]' : 'bg-gray-50 border-gray-200 text-slate-400 hover:text-slate-600 hover:bg-gray-100'}`}>
                       <Settings className="w-3.5 h-3.5" />
                     </button>
                   </motion.div>
@@ -173,12 +174,12 @@ export default function BatchPushModal({ hosts, onClose }) {
 
         {/* Actions */}
         <div className="px-4 py-5 border-t border-[#E8E8E8] flex items-center gap-3">
-          <button onClick={handleCopy} className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#F2F2F2] text-slate-600 hover:bg-[#E6E6E6] text-sm transition-colors font-medium">
-            {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}{copied ? '已复制' : '一键复制'}
+          <button onClick={handleCopy} className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#F0F3F6] text-slate-600 hover:bg-[#E2E5E8] text-sm transition-colors font-medium">
+            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}{copied ? '已复制' : '一键复制'}
           </button>
           <div className="flex items-center gap-3 ml-auto">
-            <button onClick={onClose} className="flex items-center px-3.5 py-1.5 rounded-lg bg-[#F2F2F2] text-slate-600 hover:bg-[#E6E6E6] text-sm transition-colors font-medium">取消</button>
-            <button onClick={handleSend} disabled={loading || sending || sent || activeTargets.length === 0} className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors disabled:opacity-50">
+            <button onClick={onClose} className="flex items-center px-3.5 py-1.5 rounded-lg bg-[#F0F3F6] text-slate-600 hover:bg-[#E2E5E8] text-sm transition-colors font-medium">取消</button>
+            <button onClick={handleSend} disabled={loading || sending || sent || activeTargets.length === 0} className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-[#34C2C1] text-white text-sm font-medium hover:bg-[#249ea8] transition-colors disabled:opacity-50">
               {sent ? <><Check className="w-3 h-3" />已发送</> : sending ? <><Loader2 className="w-3 h-3 animate-spin" />发送中...</> : <><Send className="w-3 h-3" />确认发送</>}
             </button>
           </div>
@@ -216,7 +217,7 @@ export default function BatchPushModal({ hosts, onClose }) {
                           <th className="text-left text-xs text-slate-500 font-medium px-4 py-2.5 min-w-[140px]">主播 ID</th>
                           <th className="text-left text-xs text-slate-500 font-medium px-4 py-2.5 min-w-[320px]">数据缺口</th>
                           <th className="text-left text-xs text-slate-500 font-medium px-4 py-2.5 min-w-[120px]">是否达成</th>
-                          <th className="text-left text-xs text-slate-500 font-medium px-4 py-2.5 min-w-[160px]">AI 预测</th>
+                          <th className="text-left text-xs text-slate-500 font-medium px-4 py-2.5 min-w-[160px]"><span className="inline-flex items-center gap-1"><Sparkles className="w-3.5 h-3.5 text-slate-500" />AI 预测</span></th>
                           <th className="text-left text-xs text-slate-500 font-medium px-4 py-2.5 border-l border-[#E8E8E8]">操作</th>
                         </tr>
                       </thead>
@@ -238,13 +239,13 @@ export default function BatchPushModal({ hosts, onClose }) {
                             <td className="px-4 py-2.5">{h.targetMet ? <span className="inline-flex text-xs px-2 py-0.5 rounded-full font-medium bg-white text-slate-800 border border-gray-200">是</span> : <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-slate-100 text-slate-400">否</span>}</td>
                             <td className="px-4 py-2.5">
                               {h.prediction === 'pass' ? (
-                                <span className="inline-flex text-xs px-2 py-0.5 rounded-full font-medium bg-white text-slate-800 border border-gray-200">预测稳过</span>
+                                <span className="inline-flex text-xs px-2 py-0.5 rounded-full font-medium bg-white text-slate-800 border border-gray-200">Stable</span>
                               ) : (
-                                <span className="inline-flex text-xs px-2 py-0.5 rounded-full font-medium bg-rose-50/50 text-rose-700 border border-rose-100/60">预测未达标</span>
+                                <span className="inline-flex text-xs px-2 py-0.5 rounded-full font-medium bg-rose-50/50 text-rose-700 border border-rose-100/60">Critical</span>
                               )}
                             </td>
                             <td className="px-4 py-2.5 border-l border-[#E8E8E8]">
-                              <button onClick={() => {/* remove from targets */}} className="text-xs px-2.5 py-1 rounded-md bg-[#F2F2F2] text-slate-500 hover:bg-[#E6E6E6] transition-colors font-medium">删除</button>
+                              <button onClick={() => {/* remove from targets */}} className="text-xs px-2.5 py-1 rounded-md bg-[#F0F3F6] text-slate-500 hover:bg-[#E2E5E8] transition-colors font-medium">删除</button>
                             </td>
                           </tr>
                         ))}

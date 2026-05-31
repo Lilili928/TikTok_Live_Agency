@@ -127,13 +127,13 @@ export default function ActivityDetailPage() {
               <input
                 type="text"
                 placeholder="Creator username"
-                className="w-56 bg-[#F2F2F2] hover:bg-[#E6E6E6] rounded-lg h-[30px] pl-8 pr-3 text-sm text-slate-700 placeholder-slate-400 focus:outline-none font-medium"
+                className="w-56 bg-[#F0F3F6] hover:bg-[#E2E5E8] rounded-lg h-[30px] pl-8 pr-3 text-sm text-slate-700 placeholder-slate-400 focus:outline-none font-medium"
               />
             </div>
             <div className="relative" ref={filterRef}>
               <button
                 onClick={() => setFilterOpen(!filterOpen)}
-                className="flex items-center gap-1.5 rounded-lg h-[30px] px-3 text-xs transition-colors font-medium bg-[#F2F2F2] hover:bg-[#E6E6E6] text-slate-600 border-none"
+                className="flex items-center gap-1.5 rounded-lg h-[30px] px-3 text-xs transition-colors font-medium bg-[#F0F3F6] hover:bg-[#E2E5E8] text-slate-600 border-none"
               >
                 <span>是否达成本赛段目标</span>
                 {filterLabel && <span className="font-semibold ml-0.5">{filterLabel}</span>}
@@ -176,7 +176,7 @@ export default function ActivityDetailPage() {
               </AnimatePresence>
             </div>
           </div>
-          <button className="flex items-center gap-1.5 text-sm bg-[#F2F2F2] hover:bg-[#E6E6E6] rounded-lg h-[30px] px-3 text-slate-500 transition-colors font-medium">
+          <button className="flex items-center gap-1.5 text-sm bg-[#F0F3F6] hover:bg-[#E2E5E8] rounded-lg h-[30px] px-3 text-slate-500 transition-colors font-medium">
             <LayoutGrid className="w-3.5 h-3.5" />
             自定义
           </button>

@@ -43,7 +43,7 @@ export default function ROISandbox({ formData, baselineData }) {
   const defaultFormula = `完赛率 = ${formData.stage1Diamond ? `78% - (${formData.stage1Diamond}÷1000)×12%` : '78% - (钻石÷1000)×12%'}\n总流水 = 参与人数 × 钻石目标 × 0.72 × 完赛率\n利润率 = (总流水 - 奖励支出) ÷ 总流水`;
 
   const statusCfg = {
-    safe: { icon: CheckCircle2, color: 'text-[#34C2C1]', label: '安全', size: 'w-[18px] h-[18px]', textSize: 'text-sm' },
+    safe: { icon: CheckCircle2, color: 'text-emerald-500', label: '安全', size: 'w-[18px] h-[18px]', textSize: 'text-sm' },
     warning: { icon: Sparkles, color: 'text-slate-600', label: '关注', size: 'w-4 h-4', textSize: 'text-xs' },
     risk: { icon: AlertTriangle, color: 'text-slate-600', label: '⚠️ 奖励溢出/亏损风险', size: 'w-4 h-4', textSize: 'text-xs' },
   };
@@ -68,7 +68,7 @@ export default function ROISandbox({ formData, baselineData }) {
   };
 
   return (
-    <div className="w-full h-fit shrink-0 border border-gray-100 rounded-xl bg-white shadow-sm p-5 flex flex-col gap-4">
+    <div className="w-full h-fit shrink-0 flex flex-col gap-4">
       <div className="flex items-center justify-between mx-2">
         <h3 className="text-sm font-semibold text-slate-800">ROI 沙盘模拟</h3>
         <button className="flex items-center gap-1 text-xs text-slate-400 hover:text-[#2CB4C1] transition-colors">
@@ -83,7 +83,7 @@ export default function ROISandbox({ formData, baselineData }) {
         <motion.div
           animate={roi.isRisky ? { boxShadow: ['0 0 0px rgba(244,63,94,0)', '0 0 12px rgba(244,63,94,0.08)', '0 0 0px rgba(244,63,94,0)'] } : {}}
           transition={{ type: 'tween', ease: 'easeInOut', duration: 2.5, repeat: roi.isRisky ? Infinity : 0 }}
-          className={`border border-gray-200 rounded-xl pt-2.5 pb-3 px-3.5 ${roi.roiStatus === 'safe' ? 'bg-slate-50' : 'bg-white'} ${roi.isRisky ? 'border-rose-200' : ''}`}
+          className={`border border-gray-200 rounded-xl pt-2 pb-2 px-3.5 ${roi.roiStatus === 'safe' ? 'bg-emerald-50/60' : 'bg-white'} ${roi.isRisky ? 'border-rose-200' : ''}`}
         >
           <div className={`flex items-center justify-between ${roi.roiStatus === 'safe' ? 'gap-2' : 'gap-1.5'}`}>
             <div className="flex items-center gap-2">
@@ -108,20 +108,20 @@ export default function ROISandbox({ formData, baselineData }) {
         <div className="flex items-center gap-1.5 mx-2">
           <span className="text-xs font-medium text-slate-500">ROI 沙盘</span>
         </div>
-        <div className="grid grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-2 gap-2">
           {kpis.map((kpi, idx) => (
             <motion.div
               key={kpi.label}
               initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
               transition={{ type: 'tween', ease: 'easeInOut', duration: 0.2, delay: 0.04 * idx }}
-              className="bg-white border border-gray-200 rounded-xl px-3.5 pt-3 pb-2.5 relative"
+              className="bg-white border border-gray-200 rounded-xl px-3.5 pt-2.5 pb-1.5 relative"
             >
               {getDiff(kpi) && (
                 <span className="absolute top-2 right-2 text-sm font-semibold" style={{ color: getDiff(kpi).color }}>
                   {getDiff(kpi).display}
                 </span>
               )}
-              <div className="flex items-center gap-1.5 mb-1.5">
+              <div className="flex items-center gap-1.5 mb-1">
                 <kpi.icon className="w-4 h-4 text-slate-600" strokeWidth={1.5} />
                 <span className="text-xs text-slate-500">{kpi.label}</span>
               </div>

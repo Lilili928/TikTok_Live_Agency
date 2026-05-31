@@ -22,10 +22,10 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
     <motion.aside
       animate={{ width: collapsed ? 64 : 224 }}
       transition={{ type: 'tween', ease: 'easeInOut', duration: 0.25 }}
-      className="h-screen bg-white border-r border-slate-100 flex flex-col shrink-0 overflow-hidden z-20"
+      className="h-screen bg-white border-r border-gray-200 flex flex-col shrink-0 overflow-hidden z-20"
     >
       {/* Logo Row */}
-      <div className="flex items-center h-14 px-3 border-b border-slate-100 shrink-0 gap-2.5">
+      <div className="flex items-center h-14 px-3 border-b border-gray-200 shrink-0 gap-2.5">
         <button
           onClick={() => setCollapsed(!collapsed)}
           onMouseEnter={() => setLogoHovered(true)}
@@ -111,7 +111,7 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
       </nav>
 
       {/* Bottom */}
-      <div className="py-3 px-2.5 space-y-0.5 border-t border-slate-100">
+      <div className="py-3 px-2.5 space-y-0.5 border-t border-gray-200">
         {bottomItems.map((item) => {
           const Icon = item.icon;
           return (

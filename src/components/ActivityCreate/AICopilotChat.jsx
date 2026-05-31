@@ -35,7 +35,6 @@ const DEFAULT_HISTORY = [
   '新晋主播成长激励，预算8千钻',
   '儿童节联名直播活动，预算1万钻',
   '周末冲刺PK赛，预算6千钻',
-  '暑假流量扶持计划，预算4万钻',
 ];
 
 /* ── Dynamic CoT text generator ── */
@@ -104,8 +103,7 @@ export default function AICopilotChat({ onPresetSelect, onAIConfig }) {
   });
   const [coTTexts, setCoTTexts] = useState(null);
   const [successBanner, setSuccessBanner] = useState('');
-  const [isRefining, setIsRefining] = useState(false);
-  const [chatHistory, setChatHistory] = useState([]);
+  const [refinements, setRefinements] = useState([]);
   const [lastJSON, setLastJSON] = useState('');
   const inputRef = useRef(null);
   const scrollRef = useRef(null);
@@ -119,13 +117,13 @@ export default function AICopilotChat({ onPresetSelect, onAIConfig }) {
     if (scrollRef.current) {
       scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
     }
-  }, [thinkingStep, isSuccess]);
+  }, [thinkingStep, isSuccess, refinements, history]);
 
   // Cleanup timers
   useEffect(() => () => { if (stepTimerRef.current) clearInterval(stepTimerRef.current); }, []);
 
   const addToHistory = useCallback((msg) => {
-    setHistory(prev => { const f = prev.filter(h => h !== msg); return [msg, ...f].slice(0, 8); });
+    setHistory(prev => { const f = prev.filter(h => h !== msg); return [msg, ...f].slice(0, 6); });
   }, []);
 
   const clearTimers = () => { if (stepTimerRef.current) { clearInterval(stepTimerRef.current); stepTimerRef.current = null; } };
@@ -149,7 +147,6 @@ export default function AICopilotChat({ onPresetSelect, onAIConfig }) {
     setThinkingStep(0);
 
     if (isRefine) {
-      setIsRefining(true);
       setThinkingStep(4); // keep first 4 steps green
     }
 
@@ -157,6 +154,13 @@ export default function AICopilotChat({ onPresetSelect, onAIConfig }) {
     let userPrompt = msg;
     if (isRefine && lastJSON) {
       userPrompt = `请根据我以下的补充微调要求，在上一轮生成的活动配置 JSON 的基础上进行修改，并务必输出修改/微调后的最新完整 JSON 数据，不要输出任何解释：\n\n上一轮JSON：${lastJSON}\n\n微调要求：${msg}`;
+    }
+
+    // Add refinement to array if refining
+    let refId = null;
+    if (isRefine) {
+      refId = `${Date.now()}`;
+      setRefinements(prev => [...prev, { id: refId, query: msg, status: 'loading', desc: `正在根据补充诉求："${msg.slice(0, 30)}${msg.length > 30 ? '…' : ''}"微调赛道指标与奖励配置…` }]);
     }
 
     // CoT stepping
@@ -179,23 +183,32 @@ export default function AICopilotChat({ onPresetSelect, onAIConfig }) {
         const jsonStr = jsonMatch[0];
         setLastJSON(jsonStr);
         const parsed = JSON.parse(jsonStr);
+        setIsThinking(false);
         setIsSuccess(true);
-        setThinkingStep(isRefine ? 5 : 4);
-        if (isRefine) {
-          setSuccessBanner('活动方案已根据补充诉求成功微调就绪，请核对！');
-        } else {
+        setThinkingStep(isRefine ? 4 : 4);
+        // Update last refinement to success
+        if (refId) {
+          setRefinements(prev => prev.map(r => r.id === refId ? { ...r, status: 'success', desc: `活动方案已根据补充诉求"${r.query.slice(0, 30)}${r.query.length > 30 ? '…' : ''}"成功微调就绪，请核对！` } : r));
+        }
+        if (!isRefine) {
           setSuccessBanner(texts.successBanner.replace('✨ 已成功为您配置活动：', `✨ 已成功为您配置活动：${parsed.basicInfo?.activityName || '新活动'}`));
         }
         setTimeout(() => onAIConfig?.(parsed), 300);
       } else {
+        setIsThinking(false);
         setIsSuccess(true);
-        setThinkingStep(isRefine ? 5 : 4);
+        if (refId) {
+          setRefinements(prev => prev.map(r => r.id === refId ? { ...r, status: 'success', desc: `活动方案已根据补充诉求"${r.query.slice(0, 30)}${r.query.length > 30 ? '…' : ''}"成功微调就绪，请核对！` } : r));
+        }
       }
       onPresetSelect?.(msg);
     } catch (e) {
       console.error('AI config failed:', e);
+      setIsThinking(false);
       setIsSuccess(false);
-      setIsRefining(false);
+      if (refId) {
+        setRefinements(prev => prev.filter(r => r.id !== refId));
+      }
     }
   };
 
@@ -203,21 +216,21 @@ export default function AICopilotChat({ onPresetSelect, onAIConfig }) {
     clearTimers();
     setIsThinking(false);
     setIsSuccess(false);
-    setIsRefining(false);
     setThinkingStep(0);
     setCoTTexts(null);
     setSuccessBanner('');
     setUserInput('');
     setActivePill('');
-    setChatHistory([]);
+    setRefinements([]);
     setLastJSON('');
   };
 
   const milestoneSteps = coTTexts ? getMilestoneSteps(coTTexts) : [];
-  const displayPills = history.length > 0 ? history : DEFAULT_HISTORY;
+  const displayPills = (history.length > 0 ? history : DEFAULT_HISTORY).slice(0, 6).reverse();
+  const isFirstTurnDone = isSuccess || refinements.length > 0;
 
   return (
-    <div className="w-full h-[470px] flex-none bg-white rounded-xl border border-gray-100 shadow-sm pt-[12px] px-[16px] pb-[16px] flex flex-col justify-start overflow-hidden relative">
+    <div className="w-full h-[380px] flex-none flex flex-col justify-start overflow-hidden relative">
       {/* A. Title row — h-[20px] */}
       <div className="h-[20px] flex items-center justify-between shrink-0">
         <span className="text-sm font-semibold text-slate-800">一键填单</span>
@@ -272,22 +285,22 @@ export default function AICopilotChat({ onPresetSelect, onAIConfig }) {
                 );
               })}
 
-              {/* Step 4: loading or done */}
-              {(thinkingStep >= 3 || isSuccess) && !isRefining && (
+              {/* Step 4: locked done once first turn completes */}
+              {(thinkingStep >= 3 || isFirstTurnDone) && (
                 <div className="relative z-10 flex items-start gap-2.5">
                   <div className="w-4 h-4 rounded-full bg-white flex items-center justify-center shrink-0 mt-0.5">
-                    {isSuccess ? (
+                    {isFirstTurnDone ? (
                       <CheckCircle2 className="w-4 h-4 text-slate-500" />
                     ) : (
                       <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
                     )}
                   </div>
                   <div className="flex flex-col items-start text-left gap-0.5">
-                    <p className={`text-[11px] font-semibold ${isSuccess ? 'text-slate-500' : 'text-slate-500'}`}>
-                      {isSuccess ? (coTTexts?.step4Done || '填单完成，快去看看吧！') : (coTTexts?.step4Loading || '正在填表…')}
+                    <p className={`text-[11px] font-semibold ${isFirstTurnDone ? 'text-slate-500' : 'text-slate-500'}`}>
+                      {isFirstTurnDone ? (coTTexts?.step4Done || '填单完成，快去看看吧！') : (coTTexts?.step4Loading || '正在填表…')}
                     </p>
-                    <p className={`text-[11px] ${isSuccess ? 'text-slate-400' : 'text-slate-400'}`}>
-                      {isSuccess ? (
+                    <p className={`text-[11px] ${isFirstTurnDone ? 'text-slate-400' : 'text-slate-400'}`}>
+                      {isFirstTurnDone ? (
                         coTTexts?.step4DoneDesc || '表单数据已全部配置成功，快去右侧看看成果吧！'
                       ) : (
                         coTTexts?.step4LoadingDesc || '正在同步赛段指标与规则，自动填充活动表单配置…'
@@ -297,30 +310,26 @@ export default function AICopilotChat({ onPresetSelect, onAIConfig }) {
                 </div>
               )}
 
-              {/* Step 5: refinement */}
-              {(isRefining || (isSuccess && thinkingStep >= 5)) && (
-                <div className="relative z-10 flex items-start gap-2.5">
+              {/* Dynamic refinements */}
+              {refinements.map(ref => (
+                <div key={ref.id} className="relative z-10 flex items-start gap-2.5">
                   <div className="w-4 h-4 rounded-full bg-white flex items-center justify-center shrink-0 mt-0.5">
-                    {isSuccess ? (
+                    {ref.status === 'success' ? (
                       <CheckCircle2 className="w-4 h-4 text-slate-500" />
                     ) : (
                       <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
                     )}
                   </div>
                   <div className="flex flex-col items-start text-left gap-0.5">
-                    <p className={`text-[11px] font-semibold ${isSuccess ? 'text-slate-500' : 'text-slate-800'}`}>
-                      {isSuccess ? '微调完成，表单已更新' : '补充信息分析'}
+                    <p className={`text-[11px] font-semibold ${ref.status === 'success' ? 'text-slate-500' : 'text-slate-800'}`}>
+                      {ref.status === 'success' ? '微调完成，表单已更新' : '补充信息分析'}
                     </p>
-                    <p className={`text-[11px] ${isSuccess ? 'text-slate-400' : 'text-slate-400'}`}>
-                      {isSuccess ? (
-                        '活动方案已根据补充诉求成功微调就绪，请核对！'
-                      ) : (
-                        <TypewriterText text="正在根据补充诉求微调赛段指标与奖励配置…" />
-                      )}
+                    <p className="text-[11px] text-slate-400">
+                      <TypewriterText key={`${ref.id}-${ref.status}`} text={ref.desc} />
                     </p>
                   </div>
                 </div>
-              )}
+              ))}
               </div>
             </motion.div>
           ) : (
@@ -345,15 +354,11 @@ export default function AICopilotChat({ onPresetSelect, onAIConfig }) {
           onChange={e => setUserInput(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); startAIAnalysis(); } }}
           disabled={isThinking}
-          placeholder="描述你的活动需求，AI 自动填单..."
+          placeholder={isSuccess ? "输入补充信息，AI修改表单…" : "描述你的活动需求，AI 自动填单..."}
           className="w-full h-full bg-transparent resize-none outline-none text-sm text-slate-700 placeholder-slate-400 pt-0.5 pl-0.5 pr-2 pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
         />
         <div className="absolute bottom-[6px] right-[6px]">
-          {isSuccess && !userInput.trim() ? (
-            <div className="bg-[#2CB4C1] text-white rounded-md px-2.5 py-1 text-sm flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5" />填表完成
-            </div>
-          ) : isThinking ? (
+          {isThinking ? (
             <div className="bg-[#2CB4C1] text-white rounded-md px-2.5 py-1 text-sm flex items-center gap-1.5">
               <Loader2 className="w-3 h-3 animate-spin" />解析中
             </div>

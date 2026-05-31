@@ -154,6 +154,29 @@ export default function ActivityForm({ formData, setFormData, onSectionClick, ai
     return () => document.removeEventListener('mousedown', handleClick);
   }, [gameplayDropdownOpen]);
 
+  // Sync stageIndicators → formData for ROI sandbox real-time recomputation
+  const stageIndicatorSig = JSON.stringify(stageIndicators);
+  useEffect(() => {
+    for (let n = 1; n <= 3; n++) {
+      const sk = `stage${n}`;
+      const inds = stageIndicators[sk];
+      if (!inds) continue;
+      inds.forEach(ind => {
+        const diamondVal = ind.values?.[0] ?? 0;
+        if (ind.label === '钻石数') {
+          const key = n === 1 ? 'stage1Diamond' : `${sk}Diamond`;
+          setFormData(prev => ({ ...prev, [key]: String(diamondVal || '') }));
+        } else if (ind.label === '直播时长 (小时)') {
+          const key = n === 1 ? 'stage1Hours' : `${sk}Hours`;
+          setFormData(prev => ({ ...prev, [key]: String(diamondVal || '') }));
+        } else if (ind.label === '有效开播天数') {
+          const key = n === 1 ? 'stage1Days' : `${sk}Days`;
+          setFormData(prev => ({ ...prev, [key]: String(diamondVal || '') }));
+        }
+      });
+    }
+  }, [stageIndicatorSig]);
+
   const addIndicator = (sk) => {
     const pc = stagePhaseCount[sk] || 1;
     setStageIndicators(prev => ({
